@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <title>Test</title>
+    <script src="../libs/three.min.js" type="application/javascript"></script>
+    <script src="../libs/OrbitControls.js" type="application/javascript"></script>
+    <script src="test.js" type="application/javascript"></script>
+
+</head>
+
+<body onload="init();">
+
+</body>
+
+<script type="x-shader/x-vertex" id="vertexShader">
+
+#ifdef GS_ES
+precision highp float;
+#endif
+
+
+varying vec3 _color;
+
+uniform vec4 lightPos;
+uniform vec4 lightDiff;
+uniform vec4 matDiff;
+uniform vec4 matAmbient;
+uniform vec3 sceneAmbient;
+uniform float constantAttenuation;
+uniform float linearAttenuation;
+uniform float quadraticAttenuation;
+float attenuation;
+
+void main(){
+    vec3 lightDistance = vec3(lightPos) - (normal * position);
+    float distance = length(lightDistance);
+    vec3 lightDirection = normalize(lightDistance);
+    vec3 ambientLighting = sceneAmbient * vec3(matDiff);
+    
+    attenuation = 1.0 / (constantAttenuation 
+            + linearAttenuation * distance 
+            + quadraticAttenuation * distance * distance);
+
+    _color = ambientLighting + (attenuation * vec3(lightDiff) * max(0.0, dot(normal, lightDirection)));
+    
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+
+
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentShader">
+
+#ifdef GS_ES
+    precision highp float;
+#endif
+
+varying vec3 _color;
+
+void main(){
+    gl_FragColor = vec4(_color, 1.0);
+}
+
+</script>
+
+</html>
