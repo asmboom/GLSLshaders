@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <title>Test</title>
+    <script src="lib/three.min.js" type="application/javascript"></script>
+    <script src="lib/dat.gui.min.js" type="application/javascript"></script>
+    <script src="task4.js" type="application/javascript"></script>
+    <style>
+        body {
+            color: #fff;
+            font-family: Monospace;
+            font-size: 13px;
+            text-align: center;
+            font-weight: bold;
+
+            background-color: #000;
+            margin: 0px;
+            overflow: hidden;
+        }
+
+        #info {
+            position: relative;
+            margin: 0 auto -2.1em;
+            top: 0px;
+            width: 550px;
+            padding: 5px;
+            z-index: 100;
+        }
+
+        #loading {
+            position: absolute;
+            width: 10%;
+            text-align: center;
+            margin-left: 45%;
+            color: white;
+        }
+
+        a {
+            color: skyblue;
+        }
+
+        #stats #fps {
+            background: transparent !important
+        }
+
+        #stats #fps #fpsText {
+            color: #444 !important
+        }
+
+        #stats #fps #fpsGraph {
+            display: none
+        }
+    </style>
+</head>
+
+<body onload="init();">
+<div id="loading">Loading...</div>
+</body>
+
+<script type="x-shader/x-vertex" id="vertexShader">
+
+////////////////////////////////////////////////
+/// Program: Flag Vertex Shader
+/// Description: Mixes vertex colors and a noise texture to 
+/// alter the position of the vertices animated by a ripple effect
+/// Author: Jesús Carrasco
+/// Date: 17/08/2015
+////////////////////////////////////////////////
+
+#ifdef GS_ES
+    precision highp float;
+#endif
+
+// No need to redefine attributes with Three.js
+// Attributes
+//attribute vec3 position;
+//attribute vec3 normal;
+//attribute vec2 uv;
+
+// Uniforms
+uniform float speed;
+uniform float frequency;
+uniform float amplitude;
+uniform float turbidity;
+uniform float time;
+
+// Varying
+varying vec3 vPosition;
+varying vec3 vNormal;
+varying vec2 vUV;
+varying float vShade;
+
+uniform sampler2D textureCloud;
+
+void main(){
+    vec3 v = position;
+
+    float vFix = dot(color, vec3(0.3, 0.59, 0.11)); //Amount of flexibility of the vertex through the vertex color
+
+    // Noise animation
+    
+    float s = time * speed; 
+
+    vec2 animUV = uv;
+    animUV.x -= s * 0.3;
+
+    vec4 noise = texture2D(textureCloud, animUV);
+    float noiseWB = dot(vec3(noise), vec3(0.3, 0.59, 0.11));
+
+    // Vertex positions alteration
+    v.z += cos(frequency * position.x + (s))  *  amplitude * vFix;
+    v.y += v.z * min(turbidity, noiseWB) * vFix;
+    v.x += v.z * min(turbidity, noiseWB) * vFix;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(v, 1.0);
+
+    vShade = 1.0 - clamp(v.z + 1.0, 0.1, 1.0); //Pretty Basic lighting  based on position
+
+    vUV = uv;
+    vPosition = position;
+    vNormal = normal;
+}
+
+
+
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentShader">
+
+////////////////////////////////////////////////
+/// Program: Flag Fragment Shader
+/// Description: Mixes the illumination calculated from the z-position
+/// and adds the color of the noise texture as a very basic bump
+/// Author: Jesús Carrasco
+/// Date: 17/08/2015
+////////////////////////////////////////////////
+///
+
+#ifdef GS_ES
+    precision highp float;
+#endif
+
+// Varying
+varying vec3 vPosition;
+varying vec3 vNormal;
+varying vec2 vUV;
+varying float vShade;
+varying float vFix;
+
+// Uniforms
+uniform sampler2D textureFlag;
+uniform sampler2D textureCloud;
+uniform float time;
+uniform float speed;
+uniform float turbidity;
+
+void main(){
+
+    //Noise animation. Noise texture is calculated again to get the pixel detail
+
+    float s = time * speed;
+
+    vec2 animUV = vUV;
+    animUV.x -= s * 0.3;
+
+    
+    float noise = dot(texture2D(textureCloud, animUV).rgb, vec3(0.3, 0.59, 0.11)) * 0.5;
+    float noiseWB = mix(0.8, noise, turbidity);
+
+    vec4 _color =  texture2D(textureFlag, vUV);
+
+    //Simplified alpha discard
+    if(_color.a < 0.1){
+        discard;
+    }
+
+    vec3 fogColor = vec3(0.0, 0.0, 0.0);
+
+    // Putting it all together
+
+    gl_FragColor = mix( _color, _color * vec4( fogColor, gl_FragColor.w ), vShade ) * noiseWB;
+    
+}
+
+</script>
+
+</html>
