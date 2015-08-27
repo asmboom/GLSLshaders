@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <title>Test</title>
+    <script src="../libs/three.min.js" type="application/javascript"></script>
+    <script src="../libs/OrbitControls.js" type="application/javascript"></script>
+    <script src="test.js" type="application/javascript"></script>
+    <script src="../libs/dat.gui.min.js" type="application/javascript"></script>
+</head>
+
+<body onload="init();">
+
+</body>
+
+<script type="x-shader/x-vertex" id="vertexShader">
+
+#ifdef GS_ES
+    precision mediump float;
+#endif
+
+//Varying
+varying vec2 vUV;
+varying vec3 vNormal;
+varying vec3 vPos;
+
+void main(){
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+    vUV = uv;
+    vPos = (modelMatrix * vec4(position, 1.0)).xyz;
+    vNormal = (modelMatrix * vec4(normal, 0.0)).xyz;
+}
+
+
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentShader">
+
+#ifdef GS_ES
+    precision mediump float;
+#endif
+
+uniform vec4 lightPos;
+uniform vec4 lightDiff;
+uniform vec4 matDiff;
+uniform vec4 matAmbient;
+uniform vec3 sceneAmbient;
+uniform vec3 fogColor;
+uniform float near;
+uniform float far;
+
+uniform float shininess;
+
+varying vec2 vUV;
+varying vec3 vNormal;
+varying vec4 projNormal;
+varying vec3 vPos;
+
+uniform sampler2D texture1;
+uniform sampler2D textureSpec;
+
+
+void main(){
+    
+    float depth = gl_FragCoord.z / gl_FragCoord.w;
+
+    float fogFactor = smoothstep( 1.0, 800.0, depth );
+
+
+
+    //fogFactor will act as measure distance for lods
+    if(fogFactor < near){
+        discard;
+    }
+
+    if(fogFactor > far){
+        discard;
+    }
+
+    //Textures
+    vec3 texColor = texture2D(texture1, vUV).rgb;
+    float specColor = texture2D(textureSpec, vUV).r;
+
+    //Directions
+    vec3 vNormalW = normalize(vNormal);
+    vec3 lightDirection = normalize(vPos - lightPos.xyz);
+
+    //Lambertian
+    float ndl = max(0.0, dot(-lightDirection, vNormalW));
+
+    
+    //vec3 vPositionW = vec3(viewMatrix * vec4(vPos, 1.0));
+    //vec3 vNormalW = normalize(vNormal);
+    //vec3 viewDirectionW = normalize(cameraPosition - vPos);
+
+    //vec3 lightPosW = normalize(viewDirectionW - lightPos.xyz);
+    // Lights
+    vec3 ambientLighting = sceneAmbient * vec3(matDiff);
+    //vec3 lightVectorW = normalize(lightPosW.xyz);
+
+    //Speck
+    vec3 eyeDirection = normalize(-vPos);
+    vec3 reflectionDirection = reflect(-lightDirection, vNormal);
+
+    float specLevel = max(0.0,dot(reflectionDirection, eyeDirection));
+    
+
+    specLevel = pow(specLevel, max(1., 64.)) * shininess;
+
+    vec3 finalSpec = vec3(lightDiff) * specLevel * specColor;
+    
+    
+
+    
+    vec3 finalLight = vec3(lightDiff) * ndl  + ambientLighting + finalSpec;
+
+
+
+    //gl_FragColor = vec4(specColor, specColor, specColor, 1.0);
+    gl_FragColor = vec4(finalLight * texColor, 1.0);
+    //gl_FragColor = mix(vec4(texColor * dotProduct, 1.0), vec4( fogColor, gl_FragColor.w ), fogFactor );
+    
+}
+
+</script>
+
+</html>
