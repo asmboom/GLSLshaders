@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <title>Test</title>
+    <script src="../libs/three.min.js" type="application/javascript"></script>
+    <script src="../libs/OrbitControls.js" type="application/javascript"></script>
+    <script src="test.js" type="application/javascript"></script>
+    <script src="../libs/dat.gui.min.js" type="application/javascript"></script>
+</head>
+
+<body onload="init();">
+
+</body>
+
+<script type="x-shader/x-vertex" id="vertexShader">
+
+#ifdef GS_ES
+    precision mediump float;
+#endif
+
+//Varying
+varying vec2 vUV;
+varying vec3 vNormal;
+varying vec3 vPos;
+varying vec4 vShadowCoord;
+
+void main(){
+
+    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+
+    gl_Position = projectionMatrix * mvPosition;
+
+    vUV = uv;
+    vPos = (modelMatrix * vec4(position, 1.0)).xyz;
+    vNormal = (modelMatrix * vec4(normal, 0.0)).xyz;
+    vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+}
+
+
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentShader">
+
+uniform vec4 lightPos;
+uniform vec4 lightDiff;
+uniform vec4 matDiff;
+uniform vec4 matAmbient;
+uniform vec3 sceneAmbient;
+uniform vec3 fogColor;
+uniform float near;
+uniform float far;
+
+uniform float shininess;
+uniform vec4 shadowMap;
+
+varying vec2 vUV;
+varying vec3 vNormal;
+varying vec4 projNormal;
+varying vec3 vPos;
+
+uniform sampler2D texture1;
+uniform sampler2D textureSpec;
+
+void main(){
+
+    //Specular Map
+    vec4 texelSpecular = texture2D( textureSpec, vUV);
+    float specularStrength = texelSpecular.r;
+
+    //Directions
+    vec3 vNormalW = normalize(vNormal);
+    vec3 lightDirection = normalize(lightPos.xyz - vPos);
+
+
+    //Depth Fog
+    float depth = gl_FragCoord.z / gl_FragCoord.w;
+    float fogFactor = smoothstep( 1.0, 800.0, depth );
+    vec3 ambientLighting = sceneAmbient * vec3(matDiff);
+
+    //fogFactor will act as measure distance for lods
+    //if(fogFactor < near){
+    //    discard;
+    //}
+
+    //if(fogFactor > far){
+    //    discard;
+    
+
+    //Textures
+    vec3 texColor = texture2D(texture1, vUV).rgb;
+    float specColor = texture2D(textureSpec, vUV).r;
+
+
+    //Lambertian
+    float ndl = max(0.0, dot(lightDirection, vNormal));
+
+    //Speck
+    vec3 viewDirectionW = normalize(cameraPosition - vPos);
+    vec3 reflectionDirection = reflect(-lightDirection, vNormalW);
+    float specLevel = max(0.0, dot(reflectionDirection, viewDirectionW));
+    specLevel = pow(specLevel, max(1., 8.)) * shininess;
+
+    vec3 finalSpec = vec3(lightDiff) * specLevel * specColor;
+    vec3 finalLight = (lightDiff.xyz * ndl) + ambientLighting;
+
+    //vec3 _color = pow( finalLight * texColor + finalSpec, vec3(1.0/2.2) );
+    
+    vec3 _color = finalLight * texColor + finalSpec;
+
+    gl_FragColor = mix (vec4(_color, 1.0), vec4(fogColor, gl_FragColor.w ), fogFactor );
+}
+</script>
+
+<script id="fragment_shader_screen" type="x-shader/x-fragment">
+
+    varying vec2 vUV;
+    uniform sampler2D tDiffuse;
+
+    void main() {
+        gl_FragColor = texture2D( tDiffuse, vUV );
+    }
+
+</script>
+
+<script id="fragment_depth" type="x-shader/x-fragment">
+
+	uniform float opacity;
+	uniform sampler2D tDiffuse;
+
+	varying vec2 vUV;
+
+	// RGBA depth
+
+	float unpackDepth( const in vec4 rgba_depth ) {
+
+		const vec4 bit_shift = vec4( 1.0 / ( 256.0 * 256.0 * 256.0 ), 1.0 / ( 256.0 * 256.0 ), 1.0 / 256.0, 1.0 );
+		float depth = dot( rgba_depth, bit_shift );
+		return depth;
+	}
+
+	void main() {
+
+		float depth = 1.0 - unpackDepth( texture2D( tDiffuse, vUV ) );
+		gl_FragColor = opacity * vec4( vec3( depth ), 1.0 );
+
+	}
+
+</script>
+</html>
+
