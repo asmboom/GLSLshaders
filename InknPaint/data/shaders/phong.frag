@@ -22,12 +22,13 @@ void main(){
     //Texture
     vec3 texColor = texture2D(texture, vUV).rgb;
     float specColor = texture2D(textureSpec, vUV).r;
-    vec3 shadowMap = texture2D(shadowTexture, vLightPos.xy).rgb;
 
 
     //Directions
     vec3 vNormalW = normalize(vNormal);
     vec3 lightDirection = normalize(vPos - lightPos.xyz);
+
+    vec3 shadowMap = texture2D(shadowTexture, vLightPos.xy).rgb;
 
     //Lambert
     float ndl = max(0., dot(-lightDirection, vNormalW));
@@ -46,5 +47,6 @@ void main(){
 
     vec3 finalLight = vec3(lightDiff) * ndl + ambientLighting + finalSpec;
 
-    gl_FragColor = vec4(finalLight * texColor * shadowMap, 1.);
+    //gl_FragColor = vec4(finalLight * texColor, 1.);
+    gl_FragColor = vec4(shadowMap, 1.);
 }

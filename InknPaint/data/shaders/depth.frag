@@ -9,6 +9,6 @@ float unpackDepth(const in vec4 rgba_depth){
 }
 
 void main(){
-    float depth = 1. - unpackDepth(texture2D(tDifuse, vUv));
+    float depth = 1. - unpackDepth(texture2D(tDiffuse, vUv));
     gl_FragColor = opacity * vec4(vec3(depth), 1.0);
 }
