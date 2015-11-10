@@ -11,12 +11,23 @@ uniform float shininess;
 
 uniform sampler2D texture;
 uniform sampler2D textureSpec;
-uniform sampler2D shadowTexture;
+
 
 varying vec2 vUV;
 varying vec3 vNormal;
-varying vec3 vLightPos;
 varying vec3 vPos;
+
+//Shadow texture parameters
+uniform sampler2D shadowTexture;
+varying vec4 vShadowCoord;
+
+varying vec3 vLightPos;
+
+float unpackDepth( const in vec4 rgba_depth ) {
+    const vec4 bit_shift = vec4( 1.0 / ( 256.0 * 256.0 * 256.0 ), 1.0 / ( 256.0 * 256.0 ), 1.0 / 256.0, 1.0 );
+    float depth = dot( rgba_depth, bit_shift );
+    return depth;
+}
 
 void main(){
     //Texture
@@ -28,8 +39,6 @@ void main(){
     vec3 vNormalW = normalize(vNormal);
     vec3 lightDirection = normalize(vPos - lightPos.xyz);
 
-    vec3 shadowMap = texture2D(shadowTexture, vLightPos.xy).rgb;
-
     //Lambert
     float ndl = max(0., dot(-lightDirection, vNormalW));
 
@@ -38,6 +47,9 @@ void main(){
     //Specular
     vec3 eyeDirection = normalize(-vPos);
     vec3 reflectionDirection = reflect(-lightDirection, vNormal);
+
+    vec4 shadowMap = texture2D(shadowTexture, vLightPos.xy);
+    float fDepth = unpackDepth( shadowMap );
 
     float specLevel = max(0., dot(reflectionDirection, eyeDirection));
 
@@ -48,5 +60,7 @@ void main(){
     vec3 finalLight = vec3(lightDiff) * ndl + ambientLighting + finalSpec;
 
     //gl_FragColor = vec4(finalLight * texColor, 1.);
-    gl_FragColor = vec4(shadowMap, 1.);
+    
+    gl_FragColor = vec4(shadowMap.rgb + 0.1, 1.);
+
 }

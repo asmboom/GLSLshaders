@@ -1,6 +1,6 @@
-varying vec2 vUv;
+uniform mat4 lightProj;
+uniform mat4 lightLookAt;
 
 void main(void) {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    vUv = uv;
+     gl_Position = lightProj * modelViewMatrix * vec4(position, 1.);
 }
