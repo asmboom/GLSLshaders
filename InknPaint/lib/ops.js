@@ -1,11 +1,11 @@
-define([], function() {
+define([], function () {
     var Ops = {
 
-        degToRad: function(angle) {
+        degToRad: function (angle) {
             return (angle * Math.PI / 180);
         },
 
-        get_projection: function(angle, a, zMin, zMax) {
+        get_projection: function (angle, a, zMin, zMax) {
             var tan = Math.tan(LIBS.degToRad(0.5 * angle)),
                 A = -(zMax + zMin) / (zMax - zMin),
                 B = (-2 * zMax * zMin) / (zMax - zMin);
@@ -18,7 +18,7 @@ define([], function() {
             ];
         },
 
-        get_projection_ortho: function(width, a, zMin, zMax) {
+        get_projection_ortho: function (width, a, zMin, zMax) {
             var right = width / 2, //right bound of the projection volume
                 left = -width / 2, //left bound of the proj. vol.
                 top = (width / a) / 2, //top bound
@@ -32,7 +32,7 @@ define([], function() {
             ];
         },
 
-        lookAtDir: function(direction, up, C) {
+        lookAtDir: function (direction, up, C) {
             var z = [-direction[0], -direction[1], -direction[2]];
 
             var x = this.crossVector(up, z);
@@ -48,25 +48,25 @@ define([], function() {
             ];
         },
 
-        crossVector: function(u, v) {
+        crossVector: function (u, v) {
             return [u[1] * v[2] - v[1] * u[2],
                 u[2] * v[0] - u[0] * v[2],
                 u[0] * v[1] - u[1] * v[0]
             ];
         },
 
-        normalizeVector: function(v) {
+        normalizeVector: function (v) {
             var n = this.sizeVector(v);
             v[0] /= n;
             v[1] /= n;
             v[2] /= n;
         },
 
-        sizeVector: function(v) {
+        sizeVector: function (v) {
             return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
         },
 
-        get_I4: function() {
+        get_I4: function () {
             return [1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
@@ -74,14 +74,14 @@ define([], function() {
             ];
         },
 
-        set_I4: function(m) {
+        set_I4: function (m) {
             m[0] = 1, m[1] = 0, m[2] = 0, m[3] = 0,
                 m[4] = 0, m[5] = 1, m[6] = 0, m[7] = 0,
                 m[8] = 0, m[9] = 0, m[10] = 1, m[11] = 0,
                 m[12] = 0, m[13] = 0, m[14] = 0, m[15] = 1;
         },
 
-        rotateX: function(m, angle) {
+        rotateX: function (m, angle) {
             var c = Math.cos(angle);
             var s = Math.sin(angle);
             var mv1 = m[1],
@@ -96,7 +96,7 @@ define([], function() {
             m[10] = m[10] * c + mv9 * s;
         },
 
-        rotateY: function(m, angle) {
+        rotateY: function (m, angle) {
             var c = Math.cos(angle);
             var s = Math.sin(angle);
             var mv0 = m[0],
@@ -111,7 +111,7 @@ define([], function() {
             m[10] = c * m[10] - s * mv8;
         },
 
-        rotateZ: function(m, angle) {
+        rotateZ: function (m, angle) {
             var c = Math.cos(angle);
             var s = Math.sin(angle);
             var mv0 = m[0],
@@ -126,11 +126,11 @@ define([], function() {
             m[9] = c * m[9] + s * mv8;
         },
 
-        translateZ: function(m, t) {
+        translateZ: function (m, t) {
             m[14] += t;
         },
 
-        translateY: function(m, t) {
+        translateY: function (m, t) {
             m[13] += t;
         }
     };

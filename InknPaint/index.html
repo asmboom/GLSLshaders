@@ -79,6 +79,7 @@ void main(){
 
 
 
+
 </script>
 
 <script type="x-shader/x-fragment" id="outlineFragmentShader">
@@ -102,6 +103,7 @@ void main(){
     gl_FragColor = vec4( _color, 1.0);
     
 }
+
 
 
 
@@ -159,6 +161,7 @@ void main(){
     vPosition = (modelMatrix * vec4(position, 1.0)).xyz;
     vNormal = (modelMatrix * vec4(normal, 0.0)).xyz;
 }
+
 
 
 
@@ -285,6 +288,7 @@ void main(){
     
 
 }
+
 
 
 

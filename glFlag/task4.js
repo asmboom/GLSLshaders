@@ -21,13 +21,13 @@ function init() {
 
     clock = new THREE.Clock();
     var loader = new THREE.ObjectLoader();
-    loader.load('data/flag.json', function(scn) {
+    loader.load('data/flag.json', function (scn) {
         scene = scn;
         camera = scn.getObjectByName("camera");
 
         document.querySelector("#loading").style.display = "none";
         // Create an event listener that resizes the renderer with the browser window.
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             var WIDTH = window.innerWidth,
                 HEIGHT = window.innerHeight;
             renderer.setSize(WIDTH, HEIGHT);
@@ -81,7 +81,7 @@ function init() {
         };
 
         uniforms.textureCloud.value.wrapS = uniforms.textureCloud.value.wrapT = THREE.RepeatWrapping;
-        
+
 
         var shaderMaterial = new THREE.ShaderMaterial({
             vertexColors: THREE.VertexColors,
@@ -100,9 +100,9 @@ function init() {
 
 
         animate();
-    }, function(xhttp) {
-        
-    }, function(err) {
+    }, function (xhttp) {
+
+    }, function (err) {
         console.log(err);
     });
 
@@ -125,19 +125,19 @@ function init() {
 
     shaderGUI = gui.addFolder("Controls");
 
-    shaderGUI.add(shaderConfig, 'speed', 0.1, 5.0).onChange(function() {
+    shaderGUI.add(shaderConfig, 'speed', 0.1, 5.0).onChange(function () {
         uniforms.speed.value = shaderConfig.speed;
     });
 
-    shaderGUI.add(shaderConfig, 'frequency', 0, 5).onChange(function() {
+    shaderGUI.add(shaderConfig, 'frequency', 0, 5).onChange(function () {
         uniforms.frequency.value = shaderConfig.frequency;
     });
 
-    shaderGUI.add(shaderConfig, 'amplitude', 0, 1).onChange(function() {
+    shaderGUI.add(shaderConfig, 'amplitude', 0, 1).onChange(function () {
         uniforms.amplitude.value = shaderConfig.amplitude;
     });
 
-    shaderGUI.add(shaderConfig, 'turbidity', 0, 1).onChange(function() {
+    shaderGUI.add(shaderConfig, 'turbidity', 0, 1).onChange(function () {
         uniforms.turbidity.value = shaderConfig.turbidity;
     });
 

@@ -21,7 +21,7 @@ require(["threejs", "orbit",
         "text!../data/shaders/postpro.vert",
         "text!../data/shaders/postpro.frag",
     ],
-    function(threejs, orbit, depthV, depthF, phongV, phongF, ColorV, ColorF, postproV, postproF) {
+    function (threejs, orbit, depthV, depthF, phongV, phongF, ColorV, ColorF, postproV, postproF) {
 
         var SCREEN_WIDTH = window.innerWidth;
         var SCREEN_HEIGHT = window.innerHeight;
@@ -59,17 +59,17 @@ require(["threejs", "orbit",
         scene.add(camera);
 
         var jsonLoader = new THREE.JSONLoader();
-        jsonLoader.load("data/scene.json", function(geo, material) {
+        jsonLoader.load("data/scene.json", function (geo, material) {
 
             material = new THREE.MeshPhongMaterial({
                 color: 0xFFFF99
             });
 
-            var rubia = new THREE.SkinnedMesh(geo, material);
-            rubia.material.skinning = true;
-            rubia.castShadow = true;
-            rubia.receiveShadow = true;
-            scene.add(rubia);
+            var wolvie = new THREE.SkinnedMesh(geo, material);
+            wolvie.material.skinning = true;
+            wolvie.castShadow = true;
+            wolvie.receiveShadow = true;
+            scene.add(wolvie);
 
             clock = new THREE.Clock();
 
@@ -77,42 +77,30 @@ require(["threejs", "orbit",
             scene.add(ambient);
 
             var textureLoader = new THREE.TextureLoader();
-            var colorMap, normalMap;
 
             spotLight = new THREE.SpotLight(0xFFFFFF, 1.0);
             spotLight.name = 'Spot Light';
-            spotLight.position.set(2.5, 2.5, 1);
+            spotLight.position.set(2, 5, 14);
             spotLight.castShadow = true;
             spotLight.shadowCameraNear = 0.01;
-            spotLight.shadowCameraFar = 15;
+            spotLight.shadowCameraFar = 30;
             spotLight.shadowMapWidth = 1024;
             spotLight.shadowMapHeight = 1024;
+            spotLight.shadowBias = -0.000000001;
             scene.add(spotLight);
 
             renderer.shadowMap.render(scene);
             renderer.render(scene, camera);
 
-            var geometry = new THREE.PlaneGeometry(5, 5);
-            var mat = new THREE.MeshBasicMaterial();
-
-            plane = new THREE.Mesh(geometry, mat);
-            //plane.position.set(0, 2.5, 7);
-            plane.rotateX(-Math.PI / 2);
-            plane.receiveShadow = true;
-            plane.castShadow = true;
-
-            //plane.material.map = spotLight.shadow.map.texture;
-            scene.add(plane);
-
-            helper = new THREE.SkeletonHelper(rubia);
+            helper = new THREE.SkeletonHelper(wolvie);
             helper.material.linewidth = 1;
             helper.visible = false;
             scene.add(helper);
 
-            mixer = new THREE.AnimationMixer(rubia);
+            mixer = new THREE.AnimationMixer(wolvie);
 
-            var clip = rubia.geometry.animations[1];
-            var action = mixer.clipAction(clip, rubia);
+            var clip = wolvie.geometry.animations[1];
+            var action = mixer.clipAction(clip, wolvie);
             action.play();
 
             controls = new THREE.OrbitControls(camera);
@@ -168,72 +156,23 @@ require(["threejs", "orbit",
                 USE_NORMAL: true
             };
 
-            var customNoBones = customMaterial.clone();
-            customNoBones.skinning = false;
-            customNoBones.defines = {
-                USE_NORMAL: false
-            };
 
-
-            var colorMaterial = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: ColorV,
-                fragmentShader: ColorF,
-                skinning: true
+            textureLoader.load("data/color.png", function (color) {
+                customMaterial.uniforms.colorMap.value = color;
+                var material = new THREE.MeshPhongMaterial({map: color});
+                material.specular = new THREE.Color(0, 0, 0);
+                textureLoader.load("data/normals.png", function (color) {
+                    customMaterial.uniforms.normalMap.value = color;
+                    material.normalMap = color;
+                    material.skinning = true;
+                    wolvie.material = material;
+                    wolvie.material = customMaterial;
+                    animate();
+                });
             });
 
-            var colorNoBones = colorMaterial.clone();
-            colorNoBones.skinning = false;
-
-            rubia.material = customMaterial;
-            plane.material = customNoBones;
-            animate();
 
 
-            textureLoader.load("data/Avatar_welcome_diffuse.png", function(color) {
-                colorMaterial.uniforms.colorMap.value = color;
-                colorMaterial.uniforms.colorMap.value = color;
-            });
-
-            textureLoader.load("data/Avatar_welcome_normal.png", function(color) {
-                colorMaterial.uniforms.normalMap.value = color;
-            });
-
-            textureLoader.load("data/city_asphalt_1_d.jpg", function(color) {
-                customNoBones.uniforms.colorMap.value = color;
-                colorNoBones.uniforms.colorMap.value = color;
-            });
-
-            var postproMaterial = new THREE.ShaderMaterial({
-                vertexShader: postproV,
-                fragmentShader: postproF
-            });
-
-            var _params = {
-                minFilter: THREE.LinearFilter,
-                magFilter: THREE.NearestFilter,
-                format: THREE.RGBAFormat
-            };
-
-            ///// COLOR PASS
-            ///
-
-            var colorScene = new THREE.Scene();
-            console.log(scene.children);
-            colorScene.children = scene.children;
-            colorScene.traverse(function(obj) {
-                if (obj instanceof THREE.Mesh)
-                    if (obj.material.skinning === true)
-                        obj.material = colorMaterial;
-                    else
-                        obj.material = colorNoBones;
-            });
-
-            var fullTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
-
-            var postproPlaneGEO = new THREE.PlaneBufferGeometry(1, 1);
-            postproPlane = new THREE.Mesh(postproPlaneGEO, postproMaterial);
-            scene.add(postproPlane);
         });
 
         function animate() {

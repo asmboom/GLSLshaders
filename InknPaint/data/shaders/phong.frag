@@ -30,8 +30,9 @@ float unpackDepth( const in vec4 rgba_depth ) {
 
 #ifdef USE_NORMAL 
 
-vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
+float normalScale = 1.0;
 
+vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
     vec3 q0 = dFdx( eye_pos.xyz );
     vec3 q1 = dFdy( eye_pos.xyz );
     vec2 st0 = dFdx( vUV.st );
@@ -41,11 +42,10 @@ vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
     vec3 T = normalize( -q0 * st1.s + q1 * st0.s );
     vec3 N = normalize( surf_norm );
 
-    vec3 mapN = texture2D(normalMap, vUV).xyz * 2.0 - 1.0;
-    mapN.xy = vec2(1.0) * mapN.xy;
+    vec3 mapN = texture2D( normalMap, vUV ).xyz * 2.0 - 1.0;
+    mapN.xy = normalScale * mapN.xy;
     mat3 tsn = mat3( S, T, N );
     return normalize( tsn * mapN );
-
 }
 
 #endif
@@ -55,9 +55,12 @@ void main(){
     vec3 texColor = texture2D(colorMap, vUV).rgb;
     float specColor = texture2D(textureSpec, vUV).r;
 
+    vec3 eyeDirection = normalize(-vPos);
+
     //Directions
     #ifdef USE_NORMAL
-        vec3 vNormalW = perturbNormal2Arb(vViewPosition, normalize(vNormal));
+        vec3 vNormalW = perturbNormal2Arb(cameraPosition - vViewPosition, vNormal);
+        //vec3 vNormalW = normalize(vNormal);
     #else
         vec3 vNormalW = normalize(vNormal);
     #endif
@@ -71,7 +74,7 @@ void main(){
     vec3 ambientLighting = sceneAmbient * vec3(matDiff);
 
     //Specular
-    vec3 eyeDirection = normalize(-vPos);
+
     vec3 reflectionDirection = reflect(-lightDirection, vNormalW);
 
     float specLevel = max(0., dot(reflectionDirection, eyeDirection));
@@ -116,7 +119,6 @@ void main(){
         }
 
         shadowCoeff = 1.0 - sum * shadDarkness;
-
     }
 
 
@@ -124,7 +126,7 @@ void main(){
     
     vec3 finalLight = vec3(ndl * shadowCoeff + ambientLighting) + finalSpec;
 
-    vec3 ambient = sceneAmbient + vec3(ndl * shadowCoeff);
+    vec3 ambient = sceneAmbient + vec3(ndl);
 
     vec3 color = vec3 (1.0);
     gl_FragColor = vec4(texColor * ambient, 1.);

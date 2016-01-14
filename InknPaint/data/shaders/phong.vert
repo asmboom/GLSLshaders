@@ -3,6 +3,7 @@ varying vec2 vUV;
 varying vec3 vNormal;
 varying vec3 vPos;
 varying vec3 vViewPosition;
+varying mat4 world;
 
 //Shadow parameters
 uniform mat4 shadMatrix;
@@ -56,9 +57,10 @@ void main(){
 
     //Export varyings
     vUV = uv;
-    vPos = position;
-    vNormal = normal;
+    vPos = vec3(modelMatrix * vec4(position, 1.0));
+    vNormal = vec3(modelMatrix * vec4(normal, 1.0));
 
+    world = modelViewMatrix;
     
     vShadowCoord = shadMatrix * worldPosition;
     vViewPosition = -mvPosition.xyz;
