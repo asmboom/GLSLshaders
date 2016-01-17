@@ -8,6 +8,9 @@ uniform float shininess;
 uniform sampler2D colorMap;
 uniform sampler2D normalMap;
 uniform sampler2D textureSpec;
+uniform sampler2D matcapMap;
+uniform sampler2D hatches;
+uniform sampler2D maskMap;
 
 varying vec2 vUV;
 varying vec3 vNormal;
@@ -50,7 +53,41 @@ vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
 
 #endif
 
+vec2 matcapCalculation(vec3 eye, vec3 normal) {
+  vec3 reflected = reflect(eye, normal);
+
+  float m = 2.0 * sqrt(
+    pow(reflected.x, 2.0) +
+    pow(reflected.y, 2.0) +
+    pow(reflected.z + 1.0, 2.0)
+  );
+
+  return -reflected.xy / m + 0.5;
+}
+
+vec2 rotateUV(vec2 uv ,float degree){
+    float sinX = sin(degree);
+    float cosX = cos(degree);
+    float sinY = sin(degree);
+
+    return uv * mat2(cosX, -sinX, sinY, cosX);
+}
+
 void main(){
+
+    // Discard pixel calculation outside the frustum
+    vec3 shadowCoord = vShadowCoord.xyz / vShadowCoord.w;
+
+    bvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );
+    bool inFrustum = all( inFrustumVec );
+
+    if(!inFrustum)
+        discard;
+
+    /*vec3 vPositionW = vec3(world * vec4(vPosition, 1.0));
+    vec3 vNormalWorld = normalize(vec3(world * vec4(vNormal, 0.0)));
+    vec3 viewDirection = normalize(cameraPosition - vPositionW);*/
+
     //Texture
     vec3 texColor = texture2D(colorMap, vUV).rgb;
     float specColor = texture2D(textureSpec, vUV).r;
@@ -59,8 +96,7 @@ void main(){
 
     //Directions
     #ifdef USE_NORMAL
-        vec3 vNormalW = perturbNormal2Arb(cameraPosition - vViewPosition, vNormal);
-        //vec3 vNormalW = normalize(vNormal);
+        vec3 vNormalW = perturbNormal2Arb(-vViewPosition, normalize(vNormal));
     #else
         vec3 vNormalW = normalize(vNormal);
     #endif
@@ -70,6 +106,7 @@ void main(){
 
     //Lambert
     float ndl = max(0., dot(-lightDirection, vNormalW));
+    float halfLamb = ndl * 0.5 + 0.5;
 
     vec3 ambientLighting = sceneAmbient * vec3(matDiff);
 
@@ -78,56 +115,98 @@ void main(){
     vec3 reflectionDirection = reflect(-lightDirection, vNormalW);
 
     float specLevel = max(0., dot(reflectionDirection, eyeDirection));
-
     specLevel = pow(specLevel, max(1., 2.)) * shininess;
 
+
+    //Shadow parameters definition
     vec3 shadowMask = vec3(1.0);
-    
     float texelSizeY =  1.0 / shadowTextureSize.y;
     float shadow = 0.0;
-
-
     float texelSizeX =  1.0 / shadowTextureSize.x;
-
-    vec3 shadowCoord = vShadowCoord.xyz / vShadowCoord.w;
-
-    bvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );
-    bool inFrustum = all( inFrustumVec );
-
-    bvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );
-
-    bool frustumTest = all( frustumTestVec );
-
     float shadowColor = 1.0;
-
     float shadowCoeff = 1.0;
-
     float fDepth = 1.0;
     float sum=0.;
 
-    if ( frustumTest ) {
-        
-        float sumCoeff = 1./64.;
-        vec2 duv;
-        for(float pcf_x=-3.5; pcf_x<=3.5; pcf_x += 1.) {
-            for(float pcf_y=-3.5; pcf_y<=3.5; pcf_y += 1.) {
-                duv=vec2(pcf_x/shadowTextureSize.x, pcf_y/shadowTextureSize.y);
-                fDepth = unpackDepth(texture2D(shadowTexture, shadowCoord.xy + duv));
-                if (fDepth < shadowCoord.z + shadBias)
-                    sum += sumCoeff;
-            }
-        }
+    //RIM LIGHT
+    vec3 rimLightPos = cameraPosition;
+    vec3 rimColor = vec3(0.0);
+    float rim = 0.0;
 
-        shadowCoeff = 1.0 - sum * shadDarkness;
+    vec3 matcapColor = vec3(1.0);
+    vec3 hatchColor = vec3(1.0);
+    vec3 hatchTex = vec3(1.0);
+
+
+    rim = max(0.0, dot(vNormal, -rimLightPos));
+
+    if(rim > (0.01) && rim < (2.))
+        rim = 0.0;
+    else{
+        if (rim > 0.74)
+            rimColor = vec3(0.5, 0.2, 0.0) * ndl;
+        else{
+            rim = 1.0;
+        }
     }
 
+    //// SHADOW
+    //////////////////////////
+    float sumCoeff = 1./64.;
+    vec2 duv;
+    for(float pcf_x=-1.5; pcf_x<=1.5; pcf_x += 1.) {
+        for(float pcf_y=-1.5; pcf_y<=1.5; pcf_y += 1.) {
+            duv=vec2(pcf_x/shadowTextureSize.x, pcf_y/shadowTextureSize.y);
+            fDepth = unpackDepth(texture2D(shadowTexture, shadowCoord.xy + duv));
+            if (fDepth < shadowCoord.z + shadBias)
+                sum += sumCoeff;
+        }
+    }
+
+    shadowCoeff = 1.0 - sum * shadDarkness;
+
+    //// MATCAP
+    //////////////////////////
+    vec2 matcapUV = matcapCalculation(lightDirection, vNormalW);
+    matcapColor = texture2D(matcapMap, matcapUV).rgb + 0.3;
+    if(texture2D(maskMap, vUV).r < .5)
+        matcapColor = matcapColor + 0.6;
+
+    //// HATCHES
+    //////////////////////////
+
+    vec3 lightWeighting = vec3(ndl * 0.75);
+    //HatchRotation
+
+    vec3 hatchTexRot = texture2D(hatches, rotateUV(vPos.xy * 1.0, 35.)).rgb;
+    vec3 hatchTexVert = texture2D(hatches, rotateUV(vPos.xy * 1.0, 120.)).rgb;
+    hatchTex = texture2D(hatches,  rotateUV(vPos.xy * 1.0, -35.)).rgb;
+    vec3 hatchShadow = texture2D(hatches, vPos.xy * 1.5).rgb;
+
+    if (length(lightWeighting) < 0.7)
+        hatchColor = hatchTex;
+
+
+    if (length(lightWeighting) < 0.5)
+        hatchColor = hatchTex * hatchTexRot;
+
+    if( length(lightWeighting) < 0.2)
+        hatchColor = hatchTex * hatchTexRot * hatchTexVert;
+
+
+    if(shadowCoeff < 1.0){
+        hatchColor = hatchColor * hatchShadow *  texture2D(hatches,  rotateUV(vPos.xy * 0.5, 160.)).rgb;
+        shadowCoeff = 0.7;
+    }
+
+    if(shadowCoeff < 1.0 && shadowCoeff > 0.95)
+        hatchColor = vec3(0.2);
 
     vec3 finalSpec = vec3(lightDiff) * specLevel * specColor;
-    
-    vec3 finalLight = vec3(ndl * shadowCoeff + ambientLighting) + finalSpec;
+    vec3 finalLight = vec3((ndl * 0.5 + 0.5) * shadowCoeff + ambientLighting) + finalSpec;
 
     vec3 ambient = sceneAmbient + vec3(ndl);
 
     vec3 color = vec3 (1.0);
-    gl_FragColor = vec4(texColor * ambient, 1.);
+    gl_FragColor = vec4(texColor * matcapColor * ambient  * hatchColor * rim + rimColor, 1.);
 }

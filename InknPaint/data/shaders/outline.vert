@@ -1,7 +1,4 @@
-//Varying
-varying vec2 vUV;
-varying vec3 vPos;
-
+uniform float offset;
 
 #ifdef USE_SKINNING
 uniform sampler2D boneTexture;
@@ -25,28 +22,25 @@ mat4 getBoneMatrix( const in float i ) {
 #endif
 
 void main(){
-	
-	vec4 mvPosition;
 
-#ifdef USE_SKINNING	
+	vec4 mvPosition;
+    vec3 displaced = position + (normal * offset);
+
+#ifdef USE_SKINNING
 	mat4 boneMatX = getBoneMatrix( skinIndex.x );
 	mat4 boneMatY = getBoneMatrix( skinIndex.y );
 	mat4 boneMatZ = getBoneMatrix( skinIndex.z );
 	mat4 boneMatW = getBoneMatrix( skinIndex.w );
-	
-	vec4 skinVertex = vec4(position, 1.0);
+
+	vec4 skinVertex = vec4(displaced, 1.0);
 	vec4 skinned  = boneMatX * skinVertex * skinWeight.x;
 	skinned      += boneMatY * skinVertex * skinWeight.y;
 	skinned      += boneMatZ * skinVertex * skinWeight.z;
 	skinned      += boneMatW * skinVertex * skinWeight.w;
 	mvPosition = modelViewMatrix * skinned;
 #else
-	mvPosition = modelViewMatrix * vec4(position, 1.0);
+	mvPosition = modelViewMatrix * vec4(displaced, 1.0);
 #endif
 
 	gl_Position = projectionMatrix * mvPosition;
-
-    //Export varyings
-    vUV = uv;
-    vPos = position;
-} 
+}

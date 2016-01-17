@@ -4,6 +4,7 @@ varying vec3 vNormal;
 varying vec3 vPos;
 varying vec3 vViewPosition;
 varying mat4 world;
+varying vec3 vDisplaced;
 
 //Shadow parameters
 uniform mat4 shadMatrix;
@@ -47,18 +48,19 @@ void main(){
 	skinned      += boneMatZ * skinVertex * skinWeight.z;
 	skinned      += boneMatW * skinVertex * skinWeight.w;
 	mvPosition = modelViewMatrix * skinned;
-	vec4 worldPosition = modelMatrix * skinned;
 #else
 	mvPosition = modelViewMatrix * vec4(position, 1.0);
-	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+	vec4 skinned = vec4(position, 1.0);
 #endif
+
+	vec4 worldPosition = modelMatrix * skinned;
 
 	gl_Position = projectionMatrix * mvPosition;
 
     //Export varyings
     vUV = uv;
-    vPos = vec3(modelMatrix * vec4(position, 1.0));
-    vNormal = vec3(modelMatrix * vec4(normal, 1.0));
+    vPos = skinned.xyz;
+    vNormal = normal;
 
     world = modelViewMatrix;
     
