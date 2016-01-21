@@ -44,4 +44,6 @@ a {
 
 canvas {
     background-image: url("../data/background.jpg");
+    background-size: 100% 120%;
+    background-position-y: 25%;
 }

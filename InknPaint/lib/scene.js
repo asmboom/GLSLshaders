@@ -1,23 +1,27 @@
 require.config({
     paths: {
         threejs: "three",
-        orbit: "OrbitControls"
+        orbit: "OrbitControls",
+        gui: "dat.gui.min"
     },
     shim: {
         "orbit": {
+            deps: ["threejs"]
+        },
+        "gui": {
             deps: ["threejs"]
         }
     }
 });
 
-require(["threejs", "orbit",
+require(["threejs", "orbit", "gui",
         //Shaders
-        "text!../data/shaders/phong.vert",
-        "text!../data/shaders/phong.frag",
+        "text!../data/shaders/comic.vert",
+        "text!../data/shaders/comic.frag",
         "text!../data/shaders/outline.vert",
         "text!../data/shaders/outline.frag",
     ],
-    function (threejs, orbit, phongV, phongF, outlineV, outlineF) {
+    function (threejs, orbit, xGUI, comicV, comicF, outlineV, outlineF) {
 
         var SCREEN_WIDTH = window.innerWidth;
         var SCREEN_HEIGHT = window.innerHeight;
@@ -25,15 +29,18 @@ require(["threejs", "orbit",
         var controls;
 
         var camera, scene, spotLight, clock, mixer, helper;
-        var customMaterial, outlineMaterial;
+        var customMaterial, customStatic, outlineMaterial, outlineStatic;
 
-        var wolvie;
+        var wolvie, enviro;
+
+        var lightGUI;
 
         renderer = new THREE.WebGLRenderer({
-            antialias: true
+            antialias: true,
+            alpha: true
         });
 
-        renderer.setClearColor(0xFFFFFF);
+        renderer.setClearColor(0x000000, 0);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
         renderer.autoClear = false;
@@ -43,28 +50,87 @@ require(["threejs", "orbit",
         renderer.gammaInput = true;
         renderer.gammaOutput = true;
 
-        renderer.domElement.getContext('webgl').getExtension('OES_standard_derivatives');
-
         document.body.appendChild(renderer.domElement);
 
         var uniforms;
         var dirLight;
 
+        var modelsReady = false, texturesReady = false;
+
         camera = new THREE.PerspectiveCamera(30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000);
-        camera.position.z = 25;
-        camera.position.y = 5;
 
         var scene = new THREE.Scene();
         scene.add(camera);
 
-        var jsonLoader = new THREE.JSONLoader();
-        jsonLoader.load("data/scene.json", function (geo, material) {
+        // MODEL LIST LOAD
+        ////////////////////////////////////////
+        //
+        var modelList = ["data/enviro.json", "data/scene.json", "data/snow.json"];
+        var i = modelList.length;
+        var models = {};
+        // Load models recursively
+        function loadModel() {
+            if (i === 0) {
+                modelsReady = true;
+                if (texturesReady)
+                    init();
+                return;
+            } else {
+                var loader = new THREE.JSONLoader();
+                loader.load(modelList[i - 1], function (geo, mat) {
+                    models[modelList[i - 1].match(/\/(.*)\./)[1]] = geo;
+                    i--;
+                    loadModel();
+                }, function (request) {
+                    //console.log("LOADED................", request.loaded, request.total);
+                }, function (error) {
+                    alert("error");
+                    console.error("error loading models");
+                });
+            }
+        }
 
+        loadModel();
+
+        // TEXTURE LIST LOAD
+        ////////////////////////////////////////
+        //
+
+        var texturesList = ["data/color.jpg", "data/normals.jpg", "data/ink.jpg", "data/hatch_0.jpg", "data/mask.jpg",
+            "data/ground_color.jpg", "data/ground_normals.png", "data/blank.jpg", "data/snow.png"];
+        var textures = {};
+        var j = texturesList.length;
+        // Load textures recursively
+        function loadTexture() {
+            if (j === 0) {
+                texturesReady = true;
+                if (modelsReady)
+                    init();
+                return;
+            } else {
+                var textureLoader = new THREE.TextureLoader();
+                textureLoader.load(texturesList[j - 1], function (tex) {
+                    textures[texturesList[j - 1].match(/\/(.*)\./)[1]] = tex;
+                    j--;
+                    loadTexture();
+                }, function (request) {
+                    //console.log("LOADED................", request.loaded, request.total);
+                }, function (error) {
+                    alert("error");
+                    console.error("error loading models");
+                });
+            }
+        }
+
+
+        loadTexture();
+
+        function init() {
             material = new THREE.MeshPhongMaterial({
                 color: 0xFFFF99
             });
 
-            wolvie = new THREE.SkinnedMesh(geo, material);
+            wolvie = new THREE.SkinnedMesh(models["scene"], material);
             wolvie.material.skinning = true;
             wolvie.castShadow = true;
             wolvie.receiveShadow = true;
@@ -72,19 +138,20 @@ require(["threejs", "orbit",
 
             clock = new THREE.Clock();
 
-            var ambient = new THREE.AmbientLight(0x888888);
+            var ambient = new THREE.AmbientLight(0xAAAAAA);
             scene.add(ambient);
 
-            var textureLoader = new THREE.TextureLoader();
-
-            spotLight = new THREE.SpotLight(0xFFFFFF, 1.0);
+            spotLight = new THREE.DirectionalLight(0xFFFFFF, 1.0);
             spotLight.name = 'Spot Light';
-            spotLight.position.set(2, 3, 25);
+            spotLight.position.set(-2, 20, 10);
             spotLight.castShadow = true;
             spotLight.shadowCameraNear = 0.01;
-            spotLight.shadowCameraFar = 45;
-            spotLight.shadowMapWidth = 1024;
-            spotLight.shadowMapHeight = 1024;
+            spotLight.shadowCameraFar = 100;
+            spotLight.shadowMapWidth = 2048;
+            spotLight.shadowMapHeight = 2048;
+            var cameraSpace = 25;
+            spotLight.shadowCameraLeft = spotLight.shadowCameraBottom = -cameraSpace;
+            spotLight.shadowCameraRight = spotLight.shadowCameraTop = cameraSpace;
             spotLight.shadowBias = -0.000000001;
             spotLight.shadowDarkness = 0.5;
             scene.add(spotLight);
@@ -102,8 +169,14 @@ require(["threejs", "orbit",
             var action = mixer.clipAction(clip, wolvie);
             action.play();
 
-            controls = new THREE.OrbitControls(camera);
-
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.maxPolarAngle = controls.minPolarAngle = 1.4776;
+            controls.minAzimuthAngle = -1.15008;
+            controls.maxAzimuthAngle = 1.15008;
+            camera.position.set(-6, 4, 15);
+            controls.center.set(0, 3, 0);
+            controls.noPan = true;
+            controls.noZoom = true;
             uniforms = {
                 shadMatrix: {
                     type: "m4",
@@ -126,7 +199,7 @@ require(["threejs", "orbit",
                     value: spotLight.shadow.darkness
                 },
                 lightPos: {
-                    type: "v4",
+                    type: "v3",
                     value: spotLight.position
                 },
                 sceneAmbient: {
@@ -135,32 +208,41 @@ require(["threejs", "orbit",
                 },
                 colorMap: {
                     type: "t",
-                    value: []
+                    value: textures["color"]
                 },
                 normalMap: {
                     type: "t",
-                    value: []
+                    value: textures["normals"]
+                },
+                normalScale: {
+                    type: "f",
+                    value: 1
                 },
                 matcapMap: {
                     type: "t",
-                    value: []
+                    value: textures["ink"]
                 },
                 hatches: {
                     type: "t",
-                    value: []
+                    value: textures ["hatch_0"]
                 },
                 maskMap: {
                     type: "t",
-                    value: []
+                    value: textures["mask"]
+                },
+                hatchesTest: {
+                    type: "i",
+                    value: 1
                 }
             };
 
+            uniforms.hatches.value.wrapS = uniforms.hatches.value.wrapT = THREE.RepeatWrapping;
+
             customMaterial = new THREE.ShaderMaterial({
                 uniforms: uniforms,
-                vertexShader: phongV,
-                fragmentShader: phongF,
-                skinning: true,
-                derivatives: true
+                vertexShader: comicV,
+                fragmentShader: comicF,
+                skinning: true
             });
 
             customMaterial.extensions.derivatives = true;
@@ -169,34 +251,70 @@ require(["threejs", "orbit",
                 USE_NORMAL: true
             };
 
+            var staticUniforms = {
+                shadMatrix: {
+                    type: "m4",
+                    value: spotLight.shadow.matrix
+                },
+                shadowTexture: {
+                    type: "t",
+                    value: spotLight.shadow.map
+                },
+                shadowTextureSize: {
+                    type: "v2",
+                    value: new THREE.Vector2(spotLight.shadow.map.width, spotLight.shadow.map.height)
+                },
+                shadBias: {
+                    type: "f",
+                    value: spotLight.shadow.bias
+                },
+                shadDarkness: {
+                    type: "f",
+                    value: spotLight.shadow.darkness
+                },
+                lightPos: {
+                    type: "v3",
+                    value: spotLight.position
+                },
+                sceneAmbient: {
+                    type: "c",
+                    value: ambient.color
+                },
+                colorMap: {
+                    type: "t",
+                    value: textures["ground_color"]
+                },
+                normalMap: {
+                    type: "t",
+                    value: textures["ground_normals"]
+                },
+                normalScale: {
+                    type: "f",
+                    value: 0.5
+                },
+                matcapMap: {
+                    type: "t",
+                    value: textures["ink"]
+                },
+                hatches: {
+                    type: "t",
+                    value: textures ["hatch_0"]
+                },
+                maskMap: {
+                    type: "t",
+                    value: []
+                },
+                hatchesTest: {
+                    type: "i",
+                    value: 1
+                }
+            };
 
-            textureLoader.load("data/color.jpg", function (color) {
-                customMaterial.uniforms.colorMap.value = color;
-                var material = new THREE.MeshPhongMaterial({map: color});
-                material.specular = new THREE.Color(0, 0, 0);
-                textureLoader.load("data/normals.jpg", function (color) {
-                    customMaterial.uniforms.normalMap.value = color;
-                    material.normalMap = color;
-                    textureLoader.load("data/ink.jpg", function (color) {
-                        customMaterial.uniforms.matcapMap.value = color;
-                        textureLoader.load("data/hatch_0.jpg", function (color) {
-                            color.wrapS = color.wrapT = THREE.RepeatWrapping;
-                            customMaterial.uniforms.hatches.value = color;
-
-                            textureLoader.load("data/mask.jpg", function (color) {
-                                customMaterial.uniforms.maskMap.value = color;
-                                material.skinning = true;
-                                wolvie.material = material;
-                                wolvie.material = customMaterial;
-                                animate();
-                            });
-                        });
-                    });
-                });
-            });
+            customStatic = customMaterial.clone();
+            customStatic.skinning = false;
+            customStatic.uniforms = staticUniforms;
 
             /// OUTLINE
-
             outlineMaterial = new THREE.ShaderMaterial({
                 uniforms: {
                     offset: {
@@ -205,25 +323,109 @@ require(["threejs", "orbit",
                     },
                     outlineColor: {
                         type: "c",
-                        value: new THREE.Color(0, 0, 0.1)
+                        value: new THREE.Color(0, 0, 0)
                     }
                 },
                 fragmentShader: outlineF,
                 vertexShader: outlineV,
                 skinning: true
             });
-        });
+
+            outlineStatic = outlineMaterial.clone();
+            outlineStatic.skinning = false;
+
+
+            enviro = new THREE.Mesh(models["enviro"], customStatic);
+            scene.add(enviro);
+
+            animate();
+
+
+            /// GUI
+            /////////////////////////////////////
+            //
+
+            var gui = new dat.GUI();
+
+            var gui, shaderConfig = {
+                positionX: 1.0,
+                positionY: 20.0,
+                outline: 0.01,
+                paint: true,
+                hatches: true
+            };
+
+            lightGUI = gui.addFolder("Lights");
+
+            lightGUI.add(shaderConfig, 'positionX', -11.0, 11.0).onChange(function () {
+                spotLight.position.x = shaderConfig.positionX;
+            });
+
+            lightGUI.add(shaderConfig, 'positionY', -5, 45).onChange(function () {
+                spotLight.position.y = shaderConfig.positionY;
+            });
+
+            colorGUI = gui.addFolder("Color");
+
+            colorGUI.add(shaderConfig, 'outline', 0, 0.025).onChange(function () {
+                outlineStatic.uniforms.offset.value = shaderConfig.outline;
+                outlineMaterial.uniforms.offset.value = shaderConfig.outline;
+            });
+
+            colorGUI.add(shaderConfig, 'paint').onChange(function () {
+                if (!shaderConfig.paint) {
+                    customStatic.uniforms.matcapMap.value = textures["blank"];
+                    customMaterial.uniforms.matcapMap.value = textures["blank"];
+                } else {
+                    customStatic.uniforms.matcapMap.value = textures["ink"];
+                    customMaterial.uniforms.matcapMap.value = textures["ink"];
+                }
+            });
+
+            colorGUI.add(shaderConfig, 'hatches').onChange(function () {
+                customStatic.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
+                customMaterial.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
+            });
+
+            lightGUI.open();
+            colorGUI.open();
+            var particleGEO = new THREE.BoxGeometry(5, 5, 5);
+
+            var particles = new THREE.Points(models["snow"], new THREE.PointsMaterial({
+                map: textures["snow"],
+                transparent: true
+            }));
+            scene.add(particles);
+        }
 
         function animate() {
             requestAnimationFrame(animate);
             renderer.clear();
-            wolvie.material = customMaterial;
-            wolvie.material.side = 0;
-            renderer.render(scene, camera);
-            wolvie.material = outlineMaterial;
-            wolvie.material.side = 1;
+            scene.traverse(function (obj) {
+                if (obj instanceof THREE.Mesh) {
+                    if (obj.material.skinning)
+                        obj.material = customMaterial;
+                    else
+                        obj.material = customStatic;
+                    obj.material.side = 0;
+
+                }
+            });
+
+
             renderer.render(scene, camera);
 
+            scene.traverse(function (obj) {
+                if (obj instanceof THREE.Mesh) {
+                    if (obj.material.skinning)
+                        obj.material = outlineMaterial;
+                    else
+                        obj.material = outlineStatic;
+                    obj.material.side = 1;
+                }
+            });
+
+            renderer.render(scene, camera);
             var delta = 0.75 * clock.getDelta();
             mixer.update(delta);
             controls.update();
