@@ -59,7 +59,8 @@ void main(){
 
     //Export varyings
     vUV = uv;
-    vPos = skinned.xyz;
+    vPos = position;
+    vDisplaced = skinned.xyz;
     vNormal = normal;
 
     world = modelViewMatrix;

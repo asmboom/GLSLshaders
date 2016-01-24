@@ -1,9 +1,10 @@
-uniform vec4 lightPos;
+uniform vec3 lightPos;
 uniform vec4 lightDiff;
 uniform vec4 matDiff;
 uniform vec4 matAmbient;
 uniform vec3 sceneAmbient;
 uniform float shininess;
+uniform int hatchesTest;
 
 uniform sampler2D colorMap;
 uniform sampler2D normalMap;
@@ -16,6 +17,7 @@ varying vec2 vUV;
 varying vec3 vNormal;
 varying vec3 vPos;
 varying vec3 vViewPosition;
+varying vec3 vDisplaced;
 
 uniform sampler2D shadowTexture;
 uniform vec2 shadowTextureSize;
@@ -33,7 +35,7 @@ float unpackDepth( const in vec4 rgba_depth ) {
 
 #ifdef USE_NORMAL 
 
-float normalScale = 1.0;
+uniform float normalScale;
 
 vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
     vec3 q0 = dFdx( eye_pos.xyz );
@@ -101,7 +103,7 @@ void main(){
         vec3 vNormalW = normalize(vNormal);
     #endif
 
-    vec3 lightDirection = normalize(vPos - lightPos.xyz);
+    vec3 lightDirection = normalize(vPos - lightPos);
 
 
     //Lambert
@@ -129,7 +131,7 @@ void main(){
     float sum=0.;
 
     //RIM LIGHT
-    vec3 rimLightPos = cameraPosition;
+    vec3 rimLightPos = vec3(-1., -5,-15);
     vec3 rimColor = vec3(0.0);
     float rim = 0.0;
 
@@ -138,13 +140,13 @@ void main(){
     vec3 hatchTex = vec3(1.0);
 
 
-    rim = max(0.0, dot(vNormal, -rimLightPos));
+    rim = max(0.0, dot(vNormal, rimLightPos));
 
-    if(rim > (0.01) && rim < (2.))
+    if(rim > (0.01) && rim < (0.3))
         rim = 0.0;
     else{
         if (rim > 0.74)
-            rimColor = vec3(0.5, 0.2, 0.0) * ndl;
+            rimColor = vec3(1.0) * ndl;
         else{
             rim = 1.0;
         }
@@ -178,10 +180,10 @@ void main(){
     vec3 lightWeighting = vec3(ndl * 0.75);
     //HatchRotation
 
-    vec3 hatchTexRot = texture2D(hatches, rotateUV(vPos.xy * 1.0, 35.)).rgb;
-    vec3 hatchTexVert = texture2D(hatches, rotateUV(vPos.xy * 1.0, 120.)).rgb;
-    hatchTex = texture2D(hatches,  rotateUV(vPos.xy * 1.0, -35.)).rgb;
-    vec3 hatchShadow = texture2D(hatches, vPos.xy * 1.5).rgb;
+    vec3 hatchTexRot = texture2D(hatches, rotateUV(vPos.xy * 2.0, 35.)).rgb;
+    vec3 hatchTexVert = texture2D(hatches, rotateUV(vPos.xy * 2.0, 120.)).rgb;
+    hatchTex = texture2D(hatches,  rotateUV(vPos.xy * 2.0, -35.)).rgb;
+    vec3 hatchShadow = texture2D(hatches, vPos.xy * 3.5).rgb;
 
     if (length(lightWeighting) < 0.7)
         hatchColor = hatchTex;
@@ -195,7 +197,7 @@ void main(){
 
 
     if(shadowCoeff < 1.0){
-        hatchColor = hatchColor * hatchShadow *  texture2D(hatches,  rotateUV(vPos.xy * 0.5, 160.)).rgb;
+        hatchColor = hatchColor * hatchShadow *  texture2D(hatches,  rotateUV(vPos.xy * 2.0, 160.)).rgb;
         shadowCoeff = 0.7;
     }
 
@@ -208,5 +210,8 @@ void main(){
     vec3 ambient = sceneAmbient + vec3(ndl);
 
     vec3 color = vec3 (1.0);
-    gl_FragColor = vec4(texColor * matcapColor * ambient  * hatchColor * rim + rimColor, 1.);
+    if(hatchesTest==1)
+        gl_FragColor = vec4(texColor * matcapColor * ambient  * hatchColor * rim + rimColor, 1.);
+    else
+        gl_FragColor = vec4(texColor * matcapColor * ambient  * (1.0 - sum * 2.0), 1.);
 }

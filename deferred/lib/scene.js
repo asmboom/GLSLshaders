@@ -19,10 +19,11 @@ require(["threejs", "orbit",
         "text!../data/shaders/color.frag",
         "text!../data/shaders/normal.frag",
         "text!../data/shaders/position.frag",
+        "text!../data/shaders/shadow.frag",
         "text!../data/shaders/postpro.vert",
         "text!../data/shaders/postpro.frag",
     ],
-    function(threejs, orbit, depthV, depthF, phongV, phongF, ColorF, normalF, positionF, postproV, postproF) {
+    function (threejs, orbit, depthV, depthF, phongV, phongF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
 
         var SCREEN_WIDTH = window.innerWidth;
         var SCREEN_HEIGHT = window.innerHeight;
@@ -32,9 +33,9 @@ require(["threejs", "orbit",
         var camera, orthoCamera, spotLight, uniforms, plane, clock, helper;
         var shadProjMatrix, lgtMatrix;
 
-        var scene, colorScene, normalScene, posScene, depthSecene;
+        var scene, colorScene, normalScene, posScene, depthSecene, shadowScene;
         var mixer;
-        var colorTarget, normalTarget, positionTarget, depthTarget;
+        var colorTarget, normalTarget, positionTarget, depthTarget, shadowTarget;
 
         renderer = new THREE.WebGLRenderer({
             antialias: true
@@ -64,7 +65,7 @@ require(["threejs", "orbit",
         scene.add(camera);
 
         var jsonLoader = new THREE.JSONLoader();
-        jsonLoader.load("data/scene.json", function(geo, material) {
+        jsonLoader.load("data/scene.json", function (geo, material) {
 
             material = new THREE.MeshPhongMaterial({
                 color: 0xFFFF99
@@ -86,7 +87,7 @@ require(["threejs", "orbit",
 
             spotLight = new THREE.SpotLight(0xFFFFFF, 1.0);
             spotLight.name = 'Spot Light';
-            spotLight.position.set(2.5, 2.5, 1);
+            spotLight.position.set(2.5, 2.5, 5);
             spotLight.castShadow = true;
             spotLight.shadowCameraNear = 0.01;
             spotLight.shadowCameraFar = 15;
@@ -110,9 +111,9 @@ require(["threejs", "orbit",
             scene.add(plane);
 
             /*helper = new THREE.SkeletonHelper(rubia);
-            helper.material.linewidth = 1;
-            helper.visible = false;
-            scene.add(helper);*/
+             helper.material.linewidth = 1;
+             helper.visible = false;
+             scene.add(helper);*/
 
             controls = new THREE.OrbitControls(camera);
 
@@ -195,16 +196,16 @@ require(["threejs", "orbit",
 
             //mixer.addAction(new THREE.AnimationAction(rubia.geometry.animations[1])); //r73
 
-            textureLoader.load("data/Avatar_welcome_diffuse.png", function(color) {
+            textureLoader.load("data/Avatar_welcome_diffuse.png", function (color) {
                 customMaterial.uniforms.colorMap.value = color;
                 colorMaterial.uniforms.colorMap.value = color;
             });
 
-            textureLoader.load("data/Avatar_welcome_normal.png", function(color) {
+            textureLoader.load("data/Avatar_welcome_normal.png", function (color) {
                 customMaterial.uniforms.normalMap.value = color;
             });
 
-            textureLoader.load("data/city_asphalt_1_d.jpg", function(color) {
+            textureLoader.load("data/city_asphalt_1_d.jpg", function (color) {
                 customNoBones.uniforms.colorMap.value = color;
                 colorNoBones.uniforms.colorMap.value = color;
             });
@@ -218,7 +219,7 @@ require(["threejs", "orbit",
             ///// COLOR PASS
             ///
             colorScene = scene.clone();
-            colorScene.traverse(function(obj) {
+            colorScene.traverse(function (obj) {
                 if (obj instanceof THREE.Mesh)
                     if (obj.material.skinning === true) {
                         obj.material = colorMaterial;
@@ -254,7 +255,7 @@ require(["threejs", "orbit",
                 USE_NORMAL: false
             };
 
-            normalScene.traverse(function(obj) {
+            normalScene.traverse(function (obj) {
                 if (obj instanceof THREE.Mesh)
                     if (obj.material.skinning === true) {
                         obj.material = normalMaterial;
@@ -279,7 +280,7 @@ require(["threejs", "orbit",
             var positionNoBones = positionMaterial.clone();
             positionNoBones.skinning = false;
 
-            positionScene.traverse(function(obj) {
+            positionScene.traverse(function (obj) {
                 if (obj instanceof THREE.Mesh)
                     if (obj.material.skinning === true) {
                         obj.material = positionMaterial;
@@ -304,7 +305,7 @@ require(["threejs", "orbit",
             var depthNoBones = depthMaterial.clone();
             depthNoBones.skinning = false;
 
-            depthScene.traverse(function(obj) {
+            depthScene.traverse(function (obj) {
                 if (obj instanceof THREE.Mesh)
                     if (obj.material.skinning === true) {
                         obj.material = depthMaterial;
@@ -316,6 +317,30 @@ require(["threejs", "orbit",
 
             depthTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
 
+            //// DEPTH PASS
+            ///
+            shadowScene = scene.clone();
+            var shadowMaterial = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: phongV,
+                fragmentShader: shadowF,
+                skinning: true
+            });
+
+            var shadowNoBones = shadowMaterial.clone();
+            shadowNoBones.skinning = false;
+
+            shadowScene.traverse(function (obj) {
+                if (obj instanceof THREE.Mesh)
+                    if (obj.material.skinning === true) {
+                        obj.material = shadowMaterial;
+                        var nuAction = mixer.clipAction(obj.geometry.animations[1], obj); //r74
+                        nuAction.play(); //r74
+                    } else
+                        obj.material = shadowNoBones;
+            });
+
+            shadowTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
 
             /// POSTPRO COMPOSITE
             /// 
@@ -338,6 +363,14 @@ require(["threejs", "orbit",
                     depthMap: {
                         type: "t",
                         value: []
+                    },
+                    shadowMap: {
+                        type: "t",
+                        value: []
+                    },
+                    lightPos: {
+                        type: "v3",
+                        value: spotLight.position
                     }
                 },
                 vertexShader: postproV,
@@ -348,21 +381,24 @@ require(["threejs", "orbit",
             postproPlane = new THREE.Mesh(postproPlaneGEO, postproMaterial);
             scene.add(postproPlane);
 
-
             postproPlane.material.uniforms.colorMap.value = colorTarget;
             postproPlane.material.uniforms.normalMap.value = normalTarget;
             postproPlane.material.uniforms.positionMap.value = positionTarget;
             postproPlane.material.uniforms.depthMap.value = depthTarget;
+            postproPlane.material.uniforms.shadowMap.value = shadowTarget;
             animate();
+            rubia.visible = false;
         });
 
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
+
             renderer.render(colorScene, camera, colorTarget, true);
             renderer.render(normalScene, camera, normalTarget, true);
             renderer.render(positionScene, camera, positionTarget, true);
-            renderer.render(depthScene, camera, depthTarget, true);
+            //renderer.render(depthScene, camera, depthTarget, true);
+            renderer.render(shadowScene, camera, shadowTarget, true);
             var delta = 0.75 * clock.getDelta();
             mixer.update(delta);
             controls.update();
