@@ -32,7 +32,7 @@ void main(){
     #ifdef USE_NORMAL 
     	vec3 vNormalW = perturbNormal2Arb(-vViewPosition, vNormal);
     #else
-    	vec3 vNormalW = vNormal;
+    	vec3 vNormalW = normalize(vNormal);
     #endif
-    gl_FragColor = vec4(vec3( vNormalW * 0.5 + 0.5 ), 1.);
+    gl_FragColor = vec4(vec3( vNormalW), 1.);
 } 

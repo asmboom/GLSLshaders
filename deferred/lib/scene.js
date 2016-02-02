@@ -41,7 +41,7 @@ require(["threejs", "orbit",
             antialias: true
         });
 
-        renderer.setClearColor(0xFFFFFF);
+        renderer.setClearColor(0xFFAAAA);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -387,7 +387,6 @@ require(["threejs", "orbit",
             postproPlane.material.uniforms.depthMap.value = depthTarget;
             postproPlane.material.uniforms.shadowMap.value = shadowTarget;
             animate();
-            rubia.visible = false;
         });
 
         function animate() {
