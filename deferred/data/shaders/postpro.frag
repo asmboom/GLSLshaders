@@ -8,7 +8,7 @@ varying vec2 vUV;
 
 // set important material values
 float roughnessValue = 0.3; // 0 : smooth, 1: rough
-float F0 = 0.8; // fresnel reflectance at normal incidence
+float F0 = 0.5; // fresnel reflectance at normal incidence
 float k = 0.2; // fraction of diffuse reflection (specular reflection = 1 - k)
 vec3 lightColor = vec3(0.6, 0.6, 0.6);
 
@@ -29,14 +29,19 @@ float fresnel(float VdH){
     return fresnelTerm;
 }
 
-float roughness(float NdH){
-    // roughness (or: microfacet distribution function)
-    // beckmann distribution function
+// roughness (or: microfacet distribution function)
+float roughness(float NdH, vec3 halfVector, vec3 normal){
     float mSquared = roughnessValue * roughnessValue;
-
+    // beckmann distribution function
+    
     float r1 = 1.0 / ( 4.0 * mSquared * pow(NdH, 4.0));
     float r2 = (NdH * NdH - 1.0) / (mSquared * NdH * NdH);
     return r1 * exp(r2);
+
+    //Gaussian
+    /*float c = 1.0;
+    float alpha = acos(dot(normal, halfVector));
+    return c * exp(-(alpha/mSquared));*/
 }
 
 float cookTorr(vec3 normal, vec3 light, vec3 view){
@@ -47,31 +52,31 @@ float cookTorr(vec3 normal, vec3 light, vec3 view){
     float NdV = max(0.0, dot(normal, view));
     float VdH = max(0.0, dot(view, halfVector));
 
-    return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH)) / (NdV * NdL * 3.14);
+    return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * 3.14);
 }
 
 void main(){
     //Texture
     vec3 texColor = texture2D(colorMap, vUV).rgb;
-    vec4 texNormal = texture2D(normalMap, vUV);
-    vec4 texPos = texture2D(positionMap, vUV);
+    vec3 texNormal = texture2D(normalMap, vUV).rgb;
+    vec3 texPos = texture2D(positionMap, vUV).rgb;
     vec3 texDepth = texture2D(depthMap, vUV).rgb;
     vec3 texShadow = texture2D(shadowMap, vUV).rgb;
 
-    vec3 lightDir = normalize(vec3(vec4(lightPos.xyz, 1.0) - texPos));
+    vec3 lightDir = normalize(lightPos - texPos);
 
-    vec3 eyeDir = normalize(vec3(vec4(cameraPosition, 1.0) - texPos));
+    vec3 eyeDir = normalize(cameraPosition - texPos);
     vec3 vHalfVector = normalize(lightDir + eyeDir);
 
-    float NdL = max(0., dot(texNormal.rgb,lightDir));
+    float NdL = max(0., dot(texNormal,lightDir));
     vec3 outColor = texColor * max(0.3, texShadow.r);
-    float halfNormal = pow(max(0., dot(texNormal.rgb,vHalfVector)), 100.) * 1.5;
+    float halfNormal = pow(max(0., dot(texNormal,vHalfVector)), 100.) * 1.5;
 
     vec3 ambient = vec3(0.4);
     // gamma correction
     //texColor = pow(texColor, vec3(1.0/2.2) ) * lightColor;
 
-    outColor = texColor * (NdL + ambient) * (ambient + k + cookTorr(texNormal.rgb, lightDir, eyeDir) * (1.0 - k)) * (texShadow + ambient);
+    outColor = texColor * (NdL + ambient) * (ambient + k + cookTorr(texNormal, lightDir, eyeDir) * (1.0 - k)) * (texShadow + ambient);
 
     //gl_FragColor = vec4(outColor + vec3(halfNormal * 0.1 * texShadow), 1.0);
     gl_FragColor = vec4(outColor, 1.0);
