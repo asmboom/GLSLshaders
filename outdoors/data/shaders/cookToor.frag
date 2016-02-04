@@ -22,6 +22,13 @@ uniform float shadBias;
 
 varying vec4 vShadowCoord;
 
+uniform float GGXDistribution;
+uniform float GGXGeometry;
+uniform float FresnelAbsortion;
+uniform float FresnelIOR;
+
+const float PI = 3.14159;
+
 //PBR values
 //
 // set important material values
@@ -101,30 +108,12 @@ float shadow(){
         shadowCoeff = 1.0 - sum * shadDarkness;
     }
 
-    /*if(shadowCoeff > 0.99)
-	    shadowCoeff = 1.0;
-	else
-		shadowCoeff *= texture2D(cookedAO, vUV).r;*/
-		
-
     return max(0.0, shadowCoeff);
 }
 
-float geo(float NdH, float NdV, float NdL, float VdH){
-    // geometric attenuation
-    float NH2 = 2.0 * NdH;
-    float g1 = (NH2 * NdV) / VdH;
-    float g2 = (NH2 * NdL) / VdH;
-    return min(1.0, min(g1, g2));
-}
-
-// fresnel
-float fresnel(float VdH){
-    // Schlick approximation
-    float fresnelTerm = pow(1.0 - VdH, 5.0);
-    fresnelTerm *= (1.0 - F0);
-    fresnelTerm += F0;
-    return fresnelTerm;
+float chiGGX(float v)
+{
+    return v > 0. ? 1. : 0.;
 }
 
 // roughness (or: microfacet distribution function)
@@ -137,6 +126,41 @@ float roughness(float NdH, vec3 halfVector, vec3 normal){
     return r1 * exp(r2);
 }
 
+float GGX_Distribution(float NdH, float alpha)
+{
+    float alpha2 = alpha * alpha;
+    float NdH2 = NdH * NdH;
+    float den = NdH2 * alpha2 + (1. - NdH2);
+    return (NdH * alpha2) / ( PI * den * den );
+}
+
+float geo(float NdH, float NdV, float NdL, float VdH, float alpha){
+    // geometric attenuation
+    float NH2 = 2.0 * NdH;
+    float g1 = (NH2 * NdV) / VdH;
+    float g2 = (NH2 * NdL) / VdH;
+    return min(1.0, min(g1, g2));
+}
+
+float GGX_PartialGeometryTerm(float NdV, float VdH, float alpha)
+{
+    float chi = VdH / NdV;
+    VdH = VdH * VdH;
+    float tan2 = (1. - VdH)/VdH;
+    return (chi * 2.) / (1. + sqrt(1. + alpha * alpha * tan2));
+}
+
+// fresnel
+float fresnel(float VdH){
+    // Schlick approximation
+    float fresnelTerm = pow(1.0 - VdH, 5.0);
+    fresnelTerm *= (1.0 - F0);
+    fresnelTerm += F0;
+    return fresnelTerm;
+}
+
+
+
 float cookTorr(vec3 normal, vec3 light, vec3 view){
     //Terms
     vec3 halfVector = normalize(light + view);
@@ -145,7 +169,8 @@ float cookTorr(vec3 normal, vec3 light, vec3 view){
     float NdV = max(0.0, dot(normal, view));
     float VdH = max(0.0, dot(view, halfVector));
 
-    return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * 3.14159);
+    //return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * PI) * shadow();
+    return geo(NdH, NdV, NdL, VdH, GGXGeometry);
 }
 
 void main(){
@@ -181,7 +206,7 @@ void main(){
 
     vec3 color = albedo * lin;
 
-    vec3 outCook = color *  clamp(cookTorr(vNormalW, lightDir, eyeDir) + k, 0.4 ,2.0);
+    /*vec3 outCook = color +  clamp(cookTorr(vNormalW, lightDir, eyeDir), 0.0, 1.0);
 
     // apply fog
     //color = doWonderfullFog( color, pos );
@@ -189,5 +214,7 @@ void main(){
     // gamma correction
     outCook = pow( outCook, vec3(1.0/2.2) );
 
-    gl_FragColor = vec4(outCook, 1.);
+    gl_FragColor = vec4(outCook, 1.);*/
+
+    gl_FragColor = vec4(vec3(cookTorr(vNormalW, lightDir, eyeDir)), 1.0);
 }

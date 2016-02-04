@@ -1,16 +1,20 @@
 require.config({
     paths: {
         threejs: "three",
-        orbit: "OrbitControls"
+        orbit: "OrbitControls",
+        gui: "dat.gui.min"
     },
     shim: {
         "orbit": {
+            deps: ["threejs"]
+        },
+        "gui": {
             deps: ["threejs"]
         }
     }
 });
 
-require(["threejs", "orbit",
+require(["threejs", "orbit", "gui",
         //Shaders
         "text!../data/shaders/depth.vert",
         "text!../data/shaders/depth.frag",
@@ -23,7 +27,7 @@ require(["threejs", "orbit",
         "text!../data/shaders/postpro.vert",
         "text!../data/shaders/postpro.frag",
     ],
-    function(threejs, orbit, depthV, depthF, phongV, CookF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
+    function(threejs, orbit, xGUI, depthV, depthF, phongV, CookF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
 
         var SCREEN_WIDTH = window.innerWidth;
         var SCREEN_HEIGHT = window.innerHeight;
@@ -62,7 +66,7 @@ require(["threejs", "orbit",
             scene = loadedScene;
             camera = scene.getObjectByName("Camera");
 
-            controls = new THREE.OrbitControls(camera);
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
 
             var ambient = new THREE.AmbientLight(0x888888, 1.0);
             scene.add(ambient);
@@ -126,6 +130,22 @@ require(["threejs", "orbit",
                 normalMap: {
                     type: "t",
                     value: []
+                },
+                GGXDistribution: {
+                    type: "f",
+                    value: 0.5
+                },
+                GGXGeometry: {
+                    type: "f",
+                    value: 0.5
+                },
+                FresnelAbsortion: {
+                    type: "f",
+                    value: 0.5
+                },
+                FresnelIOR: {
+                    type: "f",
+                    value: 1.3
                 }
             };
 
@@ -168,6 +188,22 @@ require(["threejs", "orbit",
                 },
                 normalMap: {
                     type: "t",
+                    value: []
+                },
+                GGXDistribution: {
+                    type: "f",
+                    value: []
+                },
+                GGXGeometry: {
+                    type: "f",
+                    value: []
+                },
+                FresnelAbsortion: {
+                    type: "f",
+                    value: []
+                },
+                FresnelIOR: {
+                    type: "f",
                     value: []
                 }
             };
@@ -222,143 +258,71 @@ require(["threejs", "orbit",
             scene.getObjectByName("Suzanne").material = monkeyMaterial;
             scene.getObjectByName("Plane").material = planeMaterial;
 
-            var _params = {
-                minFilter: THREE.LinearFilter,
-                magFilter: THREE.NearestFilter,
-                format: THREE.RGBAFormat
+
+
+            /// GUI
+            /////////////////////////////////////
+            //
+
+            var gui = new dat.GUI();
+
+            var gui, shaderConfig = {
+                GGXDistribution: 0.5,
+                GGXGeometry: 0.5,
+                FresnelAbsortion: 2,
+                FresnelIOR: 1.4,
             };
 
-            ///// COLOR PASS
-            ///
-            colorScene = scene.clone();
-            var colorMaterial = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: phongV,
-                fragmentShader: ColorF
+            lightGUI = gui.addFolder("PBR");
+
+
+            lightGUI.add(shaderConfig, 'GGXDistribution', .0, 1.0).onChange(function() {
+                scene.getObjectByName("Suzanne").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
+                scene.getObjectByName("Plane").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
             });
 
-            colorScene.traverse(function(obj) {
-                if (obj instanceof THREE.Mesh)
-                    obj.material = colorMaterial;
+            lightGUI.add(shaderConfig, 'GGXGeometry', .0, 100.0).onChange(function() {
+                scene.getObjectByName("Suzanne").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
+                scene.getObjectByName("Plane").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
             });
 
-            colorTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
-
-            //// NORMAL PASS
-            ///
-            normalScene = scene.clone();
-            var normalMaterial = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: phongV,
-                fragmentShader: normalF
+            lightGUI.add(shaderConfig, 'FresnelAbsortion', .0, 2.0).onChange(function() {
+                scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
+                scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
             });
 
-            normalMaterial.defines = {
-                USE_NORMAL: true
-            };
-
-            normalMaterial.extensions.derivatives = true;
-            normalMaterial.extensions.fragDepth = true;
-
-            normalScene.traverse(function(obj) {
-                if (obj instanceof THREE.Mesh)
-                    obj.material = normalMaterial;
+            lightGUI.add(shaderConfig, 'FresnelIOR', .0, 3.0).onChange(function() {
+                scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
+                scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
             });
 
-            normalTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
 
-            //// POSITION PASS
-            ///
-            positionScene = scene.clone();
-            var positionMaterial = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: phongV,
-                fragmentShader: positionF
+            /*
+            colorGUI = gui.addFolder("Color");
+
+            colorGUI.add(shaderConfig, 'outline', 0, 0.025).onChange(function() {
+                outlineStatic.uniforms.offset.value = shaderConfig.outline;
+                outlineMaterial.uniforms.offset.value = shaderConfig.outline;
             });
 
-            positionScene.traverse(function(obj) {
-                if (obj instanceof THREE.Mesh)
-                    obj.material = positionMaterial;
+            colorGUI.add(shaderConfig, 'paint').onChange(function() {
+                if (!shaderConfig.paint) {
+                    customStatic.uniforms.matcapMap.value = textures["blank"];
+                    customMaterial.uniforms.matcapMap.value = textures["blank"];
+                } else {
+                    customStatic.uniforms.matcapMap.value = textures["ink"];
+                    customMaterial.uniforms.matcapMap.value = textures["ink"];
+                }
             });
 
-            positionTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
+            colorGUI.add(shaderConfig, 'hatches').onChange(function() {
+                customStatic.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
+                customMaterial.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
+            });*/
 
-            //// DEPTH PASS
-            ///
-            depthScene = scene.clone();
-            var depthMaterial = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: phongV,
-                fragmentShader: depthF
-            });
+            lightGUI.open();
 
-            depthScene.traverse(function(obj) {
-                if (obj instanceof THREE.Mesh)
-                    obj.material = depthMaterial;
-            });
 
-            depthTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
-
-            //// DEPTH PASS
-            ///
-            shadowScene = scene.clone();
-            var shadowMaterial = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: phongV,
-                fragmentShader: shadowF
-            });
-
-            shadowScene.traverse(function(obj) {
-                if (obj instanceof THREE.Mesh)
-                    obj.material = shadowMaterial;
-            });
-
-            shadowTarget = new THREE.WebGLRenderTarget(renderer.getSize().width, renderer.getSize().height, _params);
-
-            /// POSTPRO COMPOSITE
-            /// 
-            /// 
-
-            var postproMaterial = new THREE.ShaderMaterial({
-                uniforms: {
-                    colorMap: {
-                        type: "t",
-                        value: []
-                    },
-                    normalMap: {
-                        type: "t",
-                        value: []
-                    },
-                    positionMap: {
-                        type: "t",
-                        value: []
-                    },
-                    depthMap: {
-                        type: "t",
-                        value: []
-                    },
-                    shadowMap: {
-                        type: "t",
-                        value: []
-                    },
-                    lightPos: {
-                        type: "v3",
-                        value: spotLight.position
-                    }
-                },
-                vertexShader: postproV,
-                fragmentShader: postproF
-            });
-
-            var postproPlaneGEO = new THREE.PlaneBufferGeometry(1, 1);
-            postproPlane = new THREE.Mesh(postproPlaneGEO, postproMaterial);
-            scene.add(postproPlane);
-
-            postproPlane.material.uniforms.colorMap.value = colorTarget;
-            postproPlane.material.uniforms.normalMap.value = normalTarget;
-            postproPlane.material.uniforms.positionMap.value = positionTarget;
-            postproPlane.material.uniforms.depthMap.value = depthTarget;
-            postproPlane.material.uniforms.shadowMap.value = shadowTarget;
             animate();
         });
 
