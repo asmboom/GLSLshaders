@@ -3,11 +3,13 @@ varying vec2 vUV;
 varying vec3 vNormal;
 varying vec3 vPos;
 varying vec3 vViewPosition;
+varying vec3 vWorldPosition;
 varying vec4 resultPos;
 
 //Shadow parameters
 uniform mat4 shadMatrix;
 varying vec4 vShadowCoord;
+
 
 
 #ifdef USE_SKINNING
@@ -63,4 +65,5 @@ void main(){
     
     vShadowCoord = shadMatrix * worldPosition;
     vViewPosition = mvPosition.xyz;
+    vWorldPosition = worldPosition.xyz;
 }

@@ -9,11 +9,13 @@ uniform sampler2D colorMap;
 uniform sampler2D normalMap;
 uniform sampler2D textureSpec;
 uniform sampler2D cookedAO;
+uniform samplerCube envMap;
 
 varying vec2 vUV;
 varying vec3 vNormal;
 varying vec3 vPos;
 varying vec3 vViewPosition;
+varying vec3 vWorldPosition;
 
 uniform sampler2D shadowTexture;
 uniform vec2 shadowTextureSize;
@@ -28,6 +30,8 @@ uniform float FresnelAbsortion;
 uniform float FresnelIOR;
 
 const float PI = 3.14159;
+#define RECIPROCAL_PI 0.31830988618
+#define RECIPROCAL_PI2 0.15915494
 
 //PBR values
 //
@@ -37,19 +41,20 @@ float F0 = 2.5; // fresnel reflectance at normal incidence
 float k = 0.4; // fraction of diffuse reflection (specular reflection = 1 - k)
 vec3 lightColor = vec3(0.9);
 
+vec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {
+	return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );
+}
+
 
 float unpackDepth( const in vec4 rgba_depth ) {
-
     const vec4 bit_shift = vec4( 1.0 / ( 256.0 * 256.0 * 256.0 ), 1.0 / ( 256.0 * 256.0 ), 1.0 / 256.0, 1.0 );
     float depth = dot( rgba_depth, bit_shift );
     return depth;
-
 }
 
 #ifdef USE_NORMAL 
 
 vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
-
     vec3 q0 = dFdx( eye_pos.xyz );
     vec3 q1 = dFdy( eye_pos.xyz );
     vec2 st0 = dFdx( vUV.st );
@@ -111,11 +116,6 @@ float shadow(){
     return max(0.0, shadowCoeff);
 }
 
-float chiGGX(float v)
-{
-    return v > 0. ? 1. : 0.;
-}
-
 // roughness (or: microfacet distribution function)
 float roughness(float NdH, vec3 halfVector, vec3 normal){
     float mSquared = roughnessValue * roughnessValue;
@@ -126,28 +126,12 @@ float roughness(float NdH, vec3 halfVector, vec3 normal){
     return r1 * exp(r2);
 }
 
-float GGX_Distribution(float NdH, float alpha)
-{
-    float alpha2 = alpha * alpha;
-    float NdH2 = NdH * NdH;
-    float den = NdH2 * alpha2 + (1. - NdH2);
-    return (NdH * alpha2) / ( PI * den * den );
-}
-
-float geo(float NdH, float NdV, float NdL, float VdH, float alpha){
+float geo(float NdH, float NdV, float NdL, float VdH){
     // geometric attenuation
     float NH2 = 2.0 * NdH;
     float g1 = (NH2 * NdV) / VdH;
     float g2 = (NH2 * NdL) / VdH;
     return min(1.0, min(g1, g2));
-}
-
-float GGX_PartialGeometryTerm(float NdV, float VdH, float alpha)
-{
-    float chi = VdH / NdV;
-    VdH = VdH * VdH;
-    float tan2 = (1. - VdH)/VdH;
-    return (chi * 2.) / (1. + sqrt(1. + alpha * alpha * tan2));
 }
 
 // fresnel
@@ -169,8 +153,7 @@ float cookTorr(vec3 normal, vec3 light, vec3 view){
     float NdV = max(0.0, dot(normal, view));
     float VdH = max(0.0, dot(view, halfVector));
 
-    //return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * PI) * shadow();
-    return geo(NdH, NdV, NdL, VdH, GGXGeometry);
+    return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * PI) * shadow();
 }
 
 void main(){
@@ -182,7 +165,7 @@ void main(){
     #ifdef USE_NORMAL
         vec3 vNormalW = perturbNormal2Arb(vViewPosition, normalize(-vNormal));
     #else
-        vec3 vNormalW = normalize(-vNormal);
+        vec3 vNormalW = normalize(vNormal);
     #endif
 
     vec3 albedo = texture2D(colorMap, vUV).rgb;
@@ -206,7 +189,7 @@ void main(){
 
     vec3 color = albedo * lin;
 
-    /*vec3 outCook = color +  clamp(cookTorr(vNormalW, lightDir, eyeDir), 0.0, 1.0);
+    vec3 outCook = color +  clamp(cookTorr(vNormalW, lightDir, eyeDir), 0.0, 1.0);
 
     // apply fog
     //color = doWonderfullFog( color, pos );
@@ -214,7 +197,24 @@ void main(){
     // gamma correction
     outCook = pow( outCook, vec3(1.0/2.2) );
 
-    gl_FragColor = vec4(outCook, 1.);*/
 
-    gl_FragColor = vec4(vec3(cookTorr(vNormalW, lightDir, eyeDir)), 1.0);
+    //CUBEMAP
+	vec3 cameraToVertex = normalize(vWorldPosition - cameraPosition );
+	vec3 worldNormal = inverseTransformDirection(-vNormalW, viewMatrix );
+	vec3 reflectVec = reflect( cameraToVertex, worldNormal );
+
+	float flipNormal = 1.0;
+
+	vec4 envColor = textureCube(envMap, reflect(eyeDir, -vNormalW));
+	//envColor.xyz = pow(envColor.xyz, vec3(1.0/2.2));
+	outCook*= envColor.rgb;
+
+	/*vec2 sampleUV;
+	sampleUV.y = max(0.0, flipNormal * reflectVec.y * 0.5 + 0.5 );
+	sampleUV.x = atan( flipNormal * reflectVec.z, flipNormal * reflectVec.x ) * RECIPROCAL_PI2 + 0.5;
+	vec4 envColor = texture2D( envMap, sampleUV );*/
+
+	outCook = pow( outCook, vec3(1.0/2.2) );
+
+    gl_FragColor = vec4(envColor.rgb, 1.);
 }
