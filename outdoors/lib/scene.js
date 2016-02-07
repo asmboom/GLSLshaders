@@ -31,7 +31,7 @@ require(["threejs", "orbit", "gui", "sky",
         "text!../data/shaders/postpro.vert",
         "text!../data/shaders/postpro.frag",
     ],
-    function(threejs, orbit, xGUI, xSky, depthV, depthF, phongV, CookF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
+    function (threejs, orbit, xGUI, xSky, depthV, depthF, phongV, CookF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
 
         var SCREEN_WIDTH = window.innerWidth;
         var SCREEN_HEIGHT = window.innerHeight;
@@ -71,7 +71,7 @@ require(["threejs", "orbit", "gui", "sky",
         var dirLight;
 
         var jsonLoader = new THREE.ObjectLoader();
-        jsonLoader.load("data/scene.json", function(loadedScene) {
+        jsonLoader.load("data/scene.json", function (loadedScene) {
 
             scene = loadedScene;
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500000);
@@ -97,12 +97,16 @@ require(["threejs", "orbit", "gui", "sky",
             spotLight.position.set(1.0, 2.0, -1.5);
             spotLight.name = 'Spot Light';
             spotLight.castShadow = true;
-            spotLight.shadow.camera.near = 250000;
-            spotLight.shadow.camera.far = 500000;
+            spotLight.shadow.camera.near = 800;
+            spotLight.shadow.camera.far = 4100;
             spotLight.shadow.mapSize.width = 2048;
             spotLight.shadow.mapSize.height = 2048;
-            spotLight.shadow.bias = 0.00000001;
+            spotLight.shadow.bias = 0.00001;
             scene.add(spotLight);
+
+            helper = new THREE.DirectionalLightHelper(spotLight, 1000);
+            scene.add(helper);
+            helper.visible = false;
 
             renderer.shadowMap.render(scene);
             renderer.render(scene, camera);
@@ -246,20 +250,20 @@ require(["threejs", "orbit", "gui", "sky",
             });
 
             var textureLoader = new THREE.TextureLoader();
-            textureLoader.load("data/color.jpg", function(tex) {
+            textureLoader.load("data/color.jpg", function (tex) {
                 monkeyMaterial.uniforms.colorMap.value = tex;
                 planeMaterial.uniforms.colorMap.value = sky.material;
             });
 
-            textureLoader.load("data/monkey_normal.jpg", function(tex) {
+            textureLoader.load("data/monkey_normal.jpg", function (tex) {
                 monkeyMaterial.uniforms.normalMap.value = tex;
             });
 
-            textureLoader.load("data/monkey.jpg", function(tex) {
+            textureLoader.load("data/monkey.jpg", function (tex) {
                 monkeyMaterial.uniforms.cookedAO.value = tex;
             });
 
-            textureLoader.load("data/floor.png", function(tex) {
+            textureLoader.load("data/floor.png", function (tex) {
                 planeMaterial.uniforms.cookedAO.value = tex;
             });
 
@@ -275,7 +279,7 @@ require(["threejs", "orbit", "gui", "sky",
                 USE_NORMAL: true
             };
 
-            scene.traverse(function(obj) {
+            scene.traverse(function (obj) {
                 if (obj instanceof THREE.Mesh) {
                     obj.castShadow = true;
                     obj.receiveShadow = true;
@@ -283,11 +287,15 @@ require(["threejs", "orbit", "gui", "sky",
             });
 
             scene.getObjectByName("Suzanne").material = monkeyMaterial;
-            scene.getObjectByName("Plane").material = planeMaterial;
-
+            //scene.getObjectByName("Plane").material = planeMaterial;
+            scene.remove(scene.getObjectByName("Plane"));
             monkeyMaterial.uniforms.envMap.value = cubeCamera.renderTarget;
             planeMaterial.uniforms.envMap.value = cubeCamera.renderTarget;
 
+            /*scene.getObjectByName("Cube.001").material = new THREE.MeshBasicMaterial({
+             color: 0xFFFFFF,
+             envMap: cubeCamera.renderTarget
+             })*/
             /// GUI
             /////////////////////////////////////
             //
@@ -296,9 +304,9 @@ require(["threejs", "orbit", "gui", "sky",
 
             var gui, shaderConfig = {
                 /*GGXDistribution: 0.5,
-                GGXGeometry: 0.5,
-                FresnelAbsortion: 2,
-                FresnelIOR: 1.4,*/
+                 GGXGeometry: 0.5,
+                 FresnelAbsortion: 2,
+                 FresnelIOR: 1.4,*/
                 ShadowFar: 500000,
                 ShadowNear: 250000
             };
@@ -307,40 +315,40 @@ require(["threejs", "orbit", "gui", "sky",
 
 
             /*lightGUI.add(shaderConfig, 'GGXDistribution', .0, 1.0).onChange(function() {
-                scene.getObjectByName("Suzanne").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
-                scene.getObjectByName("Plane").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
-            });
+             scene.getObjectByName("Suzanne").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
+             scene.getObjectByName("Plane").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
+             });
 
-            lightGUI.add(shaderConfig, 'GGXGeometry', .0, 100.0).onChange(function() {
-                scene.getObjectByName("Suzanne").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
-                scene.getObjectByName("Plane").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
-            });
+             lightGUI.add(shaderConfig, 'GGXGeometry', .0, 100.0).onChange(function() {
+             scene.getObjectByName("Suzanne").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
+             scene.getObjectByName("Plane").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
+             });
 
-            lightGUI.add(shaderConfig, 'FresnelAbsortion', .0, 2.0).onChange(function() {
-                scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-                scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-            });
+             lightGUI.add(shaderConfig, 'FresnelAbsortion', .0, 2.0).onChange(function() {
+             scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
+             scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
+             });
 
-            lightGUI.add(shaderConfig, 'FresnelIOR', .0, 3.0).onChange(function() {
-                scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-                scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-            });*/
+             lightGUI.add(shaderConfig, 'FresnelIOR', .0, 3.0).onChange(function() {
+             scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
+             scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
+             });*/
 
-            lightGUI.add(shaderConfig, 'ShadowFar', .0, 5000000).onChange(function() {
+            lightGUI.add(shaderConfig, 'ShadowFar', .0, 5000000).onChange(function () {
                 spotLight.shadow.camera.far = shaderConfig.ShadowFar;
             });
 
-            lightGUI.add(shaderConfig, 'ShadowNear', .0, 5000000).onChange(function() {
+            lightGUI.add(shaderConfig, 'ShadowNear', .0, 5000000).onChange(function () {
                 spotLight.shadow.camera.near = shaderConfig.ShadowNear;
             });
 
             var effectController = {
-                turbidity: 10,
-                reileigh: 2,
-                mieCoefficient: 0.005,
-                mieDirectionalG: 0.8,
+                turbidity: 11,
+                reileigh: 0.8,
+                mieCoefficient: 0.025,
+                mieDirectionalG: 0.95,
                 luminance: 1,
-                inclination: 0.16, // elevation / inclination
+                inclination: 0.21, // elevation / inclination
                 azimuth: 0.26, // Facing front,
                 sun: !true
             };
@@ -368,10 +376,11 @@ require(["threejs", "orbit", "gui", "sky",
                 var theta = Math.PI * (effectController.inclination - 0.5);
                 var phi = 2 * Math.PI * (effectController.azimuth - 0.5);
 
-                spotLight.position.x = distance * Math.cos(phi);
-                spotLight.position.y = distance * Math.sin(phi) * Math.sin(theta);
-                spotLight.position.z = distance * Math.sin(phi) * Math.cos(theta);
+                spotLight.position.x = distance * Math.cos(phi) * 0.01;
+                spotLight.position.y = distance * Math.sin(phi) * Math.sin(theta) * 0.01;
+                spotLight.position.z = distance * Math.sin(phi) * Math.cos(theta) * 0.01;
 
+                console.log(spotLight.position.y);
                 //spotLight.target = new THREE.Vector3(0, 0, 0);
                 //spotLight.visible = effectController.sun;
 
@@ -382,57 +391,48 @@ require(["threejs", "orbit", "gui", "sky",
 
             guiChanged();
             /*
-            colorGUI = gui.addFolder("Color");
+             colorGUI = gui.addFolder("Color");
 
-            colorGUI.add(shaderConfig, 'outline', 0, 0.025).onChange(function() {
-                outlineStatic.uniforms.offset.value = shaderConfig.outline;
-                outlineMaterial.uniforms.offset.value = shaderConfig.outline;
-            });
+             colorGUI.add(shaderConfig, 'outline', 0, 0.025).onChange(function() {
+             outlineStatic.uniforms.offset.value = shaderConfig.outline;
+             outlineMaterial.uniforms.offset.value = shaderConfig.outline;
+             });
 
-            colorGUI.add(shaderConfig, 'paint').onChange(function() {
-                if (!shaderConfig.paint) {
-                    customStatic.uniforms.matcapMap.value = textures["blank"];
-                    customMaterial.uniforms.matcapMap.value = textures["blank"];
-                } else {
-                    customStatic.uniforms.matcapMap.value = textures["ink"];
-                    customMaterial.uniforms.matcapMap.value = textures["ink"];
-                }
-            });
+             colorGUI.add(shaderConfig, 'paint').onChange(function() {
+             if (!shaderConfig.paint) {
+             customStatic.uniforms.matcapMap.value = textures["blank"];
+             customMaterial.uniforms.matcapMap.value = textures["blank"];
+             } else {
+             customStatic.uniforms.matcapMap.value = textures["ink"];
+             customMaterial.uniforms.matcapMap.value = textures["ink"];
+             }
+             });
 
-            colorGUI.add(shaderConfig, 'hatches').onChange(function() {
-                customStatic.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
-                customMaterial.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
-            });*/
+             colorGUI.add(shaderConfig, 'hatches').onChange(function() {
+             customStatic.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
+             customMaterial.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
+             });*/
 
             lightGUI.open();
 
 
             animate();
+            //skyScene = scene.clone();
         });
 
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
             renderer.render(skyScene, camera, cubeTarget, true);
-            //cubeTest.material.envMap = cubeCamera.renderTarget;
 
             cubeCamera.updateCubeMap(renderer, skyScene);
-            /*
-            renderer.render(colorScene, camera, colorTarget, true);
-            renderer.render(normalScene, camera, normalTarget, true);
-            renderer.render(positionScene, camera, positionTarget, true);
-            //renderer.render(depthScene, camera, depthTarget, true);
-            renderer.render(shadowScene, camera, shadowTarget, true);
-            */
-
             controls.update();
-            //helper.update();
+            helper.update();
         };
 
         function initSky() {
             // Add Sky Mesh
             sky = new THREE.Sky();
-            //scene.add(sky.mesh);
             skyScene.add(sky.mesh);
             var skyObject = sky.mesh.clone();
             scene.add(skyObject);

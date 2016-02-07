@@ -15,7 +15,6 @@ varying vec2 vUV;
 varying vec3 vNormal;
 varying vec3 vPos;
 varying vec3 vViewPosition;
-varying vec3 vWorldPosition;
 
 uniform sampler2D shadowTexture;
 uniform vec2 shadowTextureSize;
@@ -28,6 +27,10 @@ uniform float GGXDistribution;
 uniform float GGXGeometry;
 uniform float FresnelAbsortion;
 uniform float FresnelIOR;
+
+varying float vReflectionFactor;
+varying vec3 vI;
+varying vec3 vWorldNormal;
 
 const float PI = 3.14159;
 #define RECIPROCAL_PI 0.31830988618
@@ -72,12 +75,14 @@ vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
 
 #endif
 
-float shadow(){
+float shadow(float NdL){
 	vec3 shadowMask = vec3(1.0);
 
     float texelSizeY =  1.0 / shadowTextureSize.y;
     float shadow = 0.0;
 
+    float bias = shadBias * tan(acos(NdL)); // cosTheta is dot( n,l ), clamped between 0 and 1
+    bias = clamp(bias, 0.0 ,0.01);
 
     float texelSizeX =  1.0 / shadowTextureSize.x;
 
@@ -153,19 +158,19 @@ float cookTorr(vec3 normal, vec3 light, vec3 view){
     float NdV = max(0.0, dot(normal, view));
     float VdH = max(0.0, dot(view, halfVector));
 
-    return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * PI) * shadow();
+    return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * PI) * shadow(clamp(NdL, 0.0, 1.0));
 }
 
 void main(){
 
 	vec3 lightDir = normalize(lightPos.xyz - vPos);
-    vec3 eyeDir = normalize(cameraPosition -vPos);
+    vec3 eyeDir = normalize(cameraPosition - vPos);
 
 	//Directions
     #ifdef USE_NORMAL
-        vec3 vNormalW = perturbNormal2Arb(vViewPosition, normalize(-vNormal));
+        vec3 vNormalW = perturbNormal2Arb(vViewPosition, vWorldNormal);
     #else
-        vec3 vNormalW = normalize(vNormal);
+        vec3 vNormalW = vWorldNormal;
     #endif
 
     vec3 albedo = texture2D(colorMap, vUV).rgb;
@@ -175,9 +180,16 @@ void main(){
 
     vec3 material = albedo * NdL;
 
-    // lighting terms
+    // apply fog
+    //color = doWonderfullFog( color, pos );
+
+    //CUBEMAP
+    vec3 reflection = reflect( vI, vWorldNormal );
+    vec4 envColor = textureCube( envMap, vec3(reflection.x, reflection.yz ) );
+
+	 // lighting terms
     float occ = texture2D(cookedAO, vUV).r;
-    float sha = shadow() * NdL;
+    float sha = shadow(clamp(NdL, 0.0, 1.0)) * NdL;
     float sun = clamp(dot(vNormalW, lightDir), 0.0, 1.0 );
     float sky = clamp(0.5 + 0.5 * vNormalW.y, 0.0, 1.0 );
     float ind = clamp(dot(vNormalW, normalize(lightDir * vec3(-1.0,0.0,-1.0))), 0.0, 1.0 );
@@ -187,34 +199,12 @@ void main(){
          lin += sky * vec3(0.16,0.20,0.28) * occ;
          lin += ind * vec3(0.40,0.28,0.20) * occ;
 
-    vec3 color = albedo * lin;
-
-    vec3 outCook = color +  clamp(cookTorr(vNormalW, lightDir, eyeDir), 0.0, 1.0);
-
-    // apply fog
-    //color = doWonderfullFog( color, pos );
+    vec3 color = envColor.rgb * lin;
 
     // gamma correction
-    outCook = pow( outCook, vec3(1.0/2.2) );
+    color = pow(color, vec3(1.0/2.2) );
 
+    vec3 outCook = color + ((clamp(cookTorr(vNormalW, lightDir, eyeDir), 0.0, 1.0) * 0.1) * color);
 
-    //CUBEMAP
-	vec3 cameraToVertex = normalize(vWorldPosition - cameraPosition );
-	vec3 worldNormal = inverseTransformDirection(-vNormalW, viewMatrix );
-	vec3 reflectVec = reflect( cameraToVertex, worldNormal );
-
-	float flipNormal = 1.0;
-
-	vec4 envColor = textureCube(envMap, reflect(eyeDir, -vNormalW));
-	//envColor.xyz = pow(envColor.xyz, vec3(1.0/2.2));
-	outCook*= envColor.rgb;
-
-	/*vec2 sampleUV;
-	sampleUV.y = max(0.0, flipNormal * reflectVec.y * 0.5 + 0.5 );
-	sampleUV.x = atan( flipNormal * reflectVec.z, flipNormal * reflectVec.x ) * RECIPROCAL_PI2 + 0.5;
-	vec4 envColor = texture2D( envMap, sampleUV );*/
-
-	outCook = pow( outCook, vec3(1.0/2.2) );
-
-    gl_FragColor = vec4(envColor.rgb, 1.);
+    gl_FragColor = vec4(outCook, 1.0);
 }

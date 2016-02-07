@@ -35,6 +35,8 @@
             text-align: center;
             margin-left: 45%;
             color: white;
+            top: 30%;
+            font-size: 2em;
         }
 
         a {
@@ -83,7 +85,7 @@
 uniform float speed;
 uniform float frequency;
 uniform float amplitude;
-uniform float turbidity;
+uniform float gustiness;
 uniform float time;
 
 // Varying
@@ -94,8 +96,18 @@ varying float vShade;
 
 uniform sampler2D textureCloud;
 
+
+vec2 rotateUV(vec2 uv ,float degree){
+    float sinX = sin(degree);
+    float cosX = cos(degree);
+    float sinY = sin(degree);
+
+    return uv * mat2(cosX, -sinX, sinY, cosX);
+}
+
 void main(){
     vec3 v = position;
+
 
     float vFix = dot(color, vec3(0.3, 0.59, 0.11)); //Amount of flexibility of the vertex through the vertex color
 
@@ -103,25 +115,26 @@ void main(){
     
     float s = time * speed; 
 
-    vec2 animUV = uv;
+    vec2 animUV = rotateUV(uv, -0.21);
     animUV.x -= s * 0.3;
 
     vec4 noise = texture2D(textureCloud, animUV);
-    float noiseWB = dot(vec3(noise), vec3(0.3, 0.59, 0.11));
+    float noiseWB = noise.r;
 
     // Vertex positions alteration
-    v.z += cos(frequency * position.x + (s))  *  amplitude * vFix;
-    v.y += v.z * min(turbidity, noiseWB) * vFix;
-    v.x += v.z * min(turbidity, noiseWB) * vFix;
+    v.z += sin(frequency * position.x + (s))  *  amplitude * vFix;
+    v.y -= v.x + 0.5;
+    v.x += v.z * min(gustiness, noiseWB) * vFix;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(v, 1.0);
 
     vShade = 1.0 - clamp(v.z + 1.0, 0.1, 1.0); //Pretty Basic lighting  based on position
 
     vUV = uv;
-    vPosition = position;
-    vNormal = normal;
+    vPosition = v;
+    vNormal = normalize(normal);
 }
+
 
 
 
@@ -155,7 +168,69 @@ uniform sampler2D textureFlag;
 uniform sampler2D textureCloud;
 uniform float time;
 uniform float speed;
-uniform float turbidity;
+uniform float gustiness;
+uniform vec4 lightPos;
+
+float normalScale = 2.0;
+
+//Better normals
+vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm, vec3 normalPixel, vec2 currUV ) {
+    vec3 q0 = dFdx( eye_pos.xyz );
+    vec3 q1 = dFdy( eye_pos.xyz );
+    vec2 st0 = dFdx( currUV.st );
+    vec2 st1 = dFdy( currUV.st );
+
+    vec3 S = normalize( q0 * st1.t - q1 * st0.t );
+    vec3 T = normalize( -q0 * st1.s + q1 * st0.s );
+    vec3 N = normalize( surf_norm );
+
+    vec3 mapN = normalPixel * 2.0 - 1.0;
+    mapN.xy = normalScale * mapN.xy;
+    mat3 tsn = mat3( S, T, N );
+    return normalize( tsn * mapN );
+}
+
+
+
+vec2 rotateUV(vec2 uv ,float degree){
+    float sinX = sin(degree);
+    float cosX = cos(degree);
+    float sinY = sin(degree);
+
+    return uv * mat2(cosX, -sinX, sinY, cosX);
+}
+
+//Height map to normal calculation
+vec3 getNormal(vec2 matUV){
+
+    float s = time * speed;
+
+    vec2 animUV = vUV;
+    animUV.x -= s * 0.3;
+
+    float NORMAL_OFF = (1.0 / 128.0);
+    vec3 off = vec3(-NORMAL_OFF, 0, NORMAL_OFF);
+
+    // s11 = Current
+    float s11 = texture2D(textureCloud, rotateUV(animUV, -0.21)).x;
+
+    // s01 = Left
+    float s01 = texture2D(textureCloud, vec2(rotateUV(animUV, -0.21) + off.xy)).x;
+
+    // s21 = Right
+    float s21 = texture2D(textureCloud, vec2(rotateUV(animUV, -0.21) + off.zy)).x;
+
+    // s10 = Below
+    float s10 = texture2D(textureCloud, vec2(rotateUV(animUV, -0.21) + off.yx)).x;
+
+    // s12 = Above
+    float s12 = texture2D(textureCloud, vec2(rotateUV(animUV, -0.21) + off.yz)).x;
+
+    vec3 va = normalize( vec3(off.z, 0.0, s21 - s11) );
+    vec3 vb = normalize( vec3(0.0, off.z, s12 - s11) );
+
+    return  cross(va, vb);
+}
 
 void main(){
 
@@ -163,26 +238,28 @@ void main(){
 
     float s = time * speed;
 
+    vec3 normal = normalize(vNormal);
     vec2 animUV = vUV;
     animUV.x -= s * 0.3;
 
-    
-    float noise = dot(texture2D(textureCloud, animUV).rgb, vec3(0.3, 0.59, 0.11)) * 0.5;
-    float noiseWB = mix(0.8, noise, turbidity);
+    float noiseWB = dot(texture2D(textureCloud, rotateUV(animUV, -0.21)).rgb, vec3(0.3, 0.59, 0.11));
+    float colorWB = dot(texture2D(textureFlag, vUV).rgb, vec3(0.3, 0.59, 0.11));
+
+    //float noiseWB = mix(0.8, noise, gustiness);
 
     vec4 _color =  texture2D(textureFlag, vUV);
 
-    //Simplified alpha discard
-    if(_color.a < 0.1){
-        discard;
-    }
+    vec3 lightDirection = normalize(lightPos.xyz - vPosition);
+    float lambert = max(0.0, dot(lightDirection, getNormal(vUV))) * gustiness * colorWB;
+
+    vec3 light = vec3(lambert) + vec3(0.7);
+    vec3 viewDirection = normalize(-vPosition);
 
     vec3 fogColor = vec3(0.0, 0.0, 0.0);
 
     // Putting it all together
 
-    gl_FragColor = mix( _color, _color * vec4( fogColor, gl_FragColor.w ), vShade ) * noiseWB;
-    
+    gl_FragColor = vec4(light * _color.rgb, _color.a);
 }
 
 

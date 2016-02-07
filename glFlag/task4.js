@@ -13,17 +13,17 @@ var x = 0,
 function init() {
 
     var gui, shaderConfig = {
-        speed: 1.0,
-        frequency: 5.0,
-        amplitude: 0.35,
-        turbidity: 0.55
+        speed: 0.2,
+        frequency: 2.5,
+        amplitude: 0.5,
+        gustiness: 0.45
     };
 
     clock = new THREE.Clock();
     var loader = new THREE.ObjectLoader();
     loader.load('data/flag.json', function (scn) {
         scene = scn;
-        camera = scn.getObjectByName("camera");
+        camera = scn.children[0];
 
         document.querySelector("#loading").style.display = "none";
         // Create an event listener that resizes the renderer with the browser window.
@@ -38,9 +38,8 @@ function init() {
         // MATERIAL SETUP
         ///////////////////////////////////////////////////////////////////////////////////////////////
 
-        scene.remove(scn.getObjectByName("lamp"));
+        scene.remove(scn.getObjectByName("Lamp"));
 
-        var flag = scene.getObjectByName("flag");
 
         // Create a light, set its position, and add it to the scene.
         light = new THREE.PointLight(0xffffff);
@@ -52,7 +51,7 @@ function init() {
         uniforms = {
             textureFlag: {
                 type: "t",
-                value: flag.material.map
+                value: scene.getObjectByName("Flag").material.map
             },
             textureCloud: {
                 type: "t",
@@ -60,23 +59,27 @@ function init() {
             },
             speed: {
                 type: "f",
-                value: 1.2
+                value: 0.5
             },
             frequency: {
                 type: "f",
-                value: 5.0
+                value: 2.5
             },
             amplitude: {
                 type: "f",
-                value: 0.35
+                value: 0.5
             },
             time: {
                 type: "f",
                 value: 1.0
             },
-            turbidity: {
+            gustiness: {
                 type: "f",
-                value: 0.55
+                value: 0.45
+            },
+            lightPos: {
+                type: "v4",
+                value: new THREE.Vector4(0.0, 0.2, 2.0, 0.0)
             }
         };
 
@@ -89,15 +92,24 @@ function init() {
             attributes: attributes,
             vertexShader: document.getElementById("vertexShader").textContent,
             fragmentShader: document.getElementById("fragmentShader").textContent,
+            transparent: true,
+            derivatives: true,
+            side: THREE.DoubleSide
         });
 
         var testMaterial = new THREE.MeshBasicMaterial({
             vertexColors: THREE.VertexColors
         });
 
+        var flag = scene.getObjectByName("Flag");
 
         flag.material = shaderMaterial;
 
+        /*
+         var testSphereGeo = new THREE.SphereGeometry(2, 15, 15);
+         var testSphere = new THREE.Mesh(testSphereGeo, shaderMaterial);
+         scene.add(testSphere);
+         */
 
         animate();
     }, function (xhttp) {
@@ -137,8 +149,8 @@ function init() {
         uniforms.amplitude.value = shaderConfig.amplitude;
     });
 
-    shaderGUI.add(shaderConfig, 'turbidity', 0, 1).onChange(function () {
-        uniforms.turbidity.value = shaderConfig.turbidity;
+    shaderGUI.add(shaderConfig, 'gustiness', 0, 1).onChange(function () {
+        uniforms.gustiness.value = shaderConfig.gustiness;
     });
 
     shaderGUI.open();

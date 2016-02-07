@@ -10,7 +10,9 @@ varying vec4 resultPos;
 uniform mat4 shadMatrix;
 varying vec4 vShadowCoord;
 
-
+varying float vReflectionFactor;
+varying vec3 vI;
+varying vec3 vWorldNormal;
 
 #ifdef USE_SKINNING
 uniform sampler2D boneTexture;
@@ -66,4 +68,8 @@ void main(){
     vShadowCoord = shadMatrix * worldPosition;
     vViewPosition = mvPosition.xyz;
     vWorldPosition = worldPosition.xyz;
+
+    vWorldNormal = normalize( mat3( modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz ) * normal );
+    vI = worldPosition.xyz - cameraPosition;
+    vReflectionFactor = 1.0 + dot( normalize( vI ), vWorldNormal );
 }
