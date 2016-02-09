@@ -23,24 +23,20 @@ uniform float shadBias;
 
 varying vec4 vShadowCoord;
 
-uniform float F0;
 uniform float roughnessValue;
-uniform float fresnelTerm;
-uniform float u_time;
+uniform float F0;
 
 varying float vReflectionFactor;
 varying vec3 vI;
 varying vec3 vWorldNormal;
 
-const float PI = 3.1415926535897932384626433832795;
+#define PI 3.1415926535897932384626433832795
 #define RECIPROCAL_PI 0.31830988618
 #define RECIPROCAL_PI2 0.15915494
 
 //PBR values
 //
 // set important material values
-//float roughnessValue = 0.4; // 0 : smooth, 1: rough
-//float F0 = 2.5; // fresnel reflectance at normal incidence
 float k = 0.4; // fraction of diffuse reflection (specular reflection = 1 - k)
 vec3 lightColor = vec3(0.9);
 
@@ -139,75 +135,36 @@ float geo(float NdH, float NdV, float NdL, float VdH){
     return min(1.0, min(g1, g2));
 }
 
-// fresnel
-float F_Schlick(float VdH){
-    // Schlick approximation
-    float fresnelTerm = pow(1.0 - VdH, 5.0);
-    fresnelTerm *= (1.0 - F0);
-    fresnelTerm += F0;
-    return fresnelTerm;
-}
-
-float F(float LdH) {
-	float powTerm = (-5.55473 * LdH - 6.98316) * LdH;
-	return F0 + (1.0 - F0) * pow(2.0, powTerm);
+float F_Schlick( const in vec3 specularColor, const in float NdV ) {
+	//return 1.0 - NdV * specularColor;
+	float fresnel = 1.0 - pow(exp2( ( -5.55473 * NdV - 6.98316 ) * NdV ), F0);
+	return -1.0 * fresnel + 1.0;
 }
 
 
-float random(vec3 scale, float seed) {
-	return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
+
+vec3 BRDF_Specular_GGX_Environment( float NdV, vec3 specularColor, float roughness ) {
+	
+	const vec4 c0 = vec4( - 1, - 0.0275, - 0.572, 0.022 );
+	const vec4 c1 = vec4( 1, 0.0425, 1.04, - 0.04 );
+	vec4 r = roughness * c0 + c1;
+	float a004 = min( r.x * r.x, exp2( - 9.28 * NdV ) ) * r.x + r.y;
+	vec2 AB = vec2( -1.04, 1.04 ) * a004 + r.zw;
+	return specularColor * AB.x + AB.y;
 }
 
-vec2 RandomSamples(float seed) {
-	float u = random(vec3(12.9898, 78.233, 151.7182), seed);
-	float v = random(vec3(63.7264, 10.873, 623.6736), seed);
-	return vec2(u, v);
+
+float chiGGX(float v)
+{
+    return v > 0. ? 1. : 0.;
 }
 
-vec3 ImportanceSampleGGX( vec2 Xi, float Roughness, vec3 N ) {
-	float a = Roughness * Roughness;
-	float Phi = 2.0 * PI * Xi.x;
-	float CosTheta = sqrt( (1.0 - Xi.y) / ( 1.0 + (a*a - 1.0) * Xi.y ) );
-	float SinTheta = sqrt( 1.0 - CosTheta * CosTheta );
-	vec3 H;
-	H.x = SinTheta * cos( Phi );
-	H.y = SinTheta * sin( Phi );
-	H.z = CosTheta;
-	return H;
-}
-
-vec3 cookTorr(vec3 normal, vec3 light, vec3 view, vec3 envMap){
-    //Terms
-    vec3 halfVector = normalize(light + view);
-    float NdL = max(0.0, dot(normal, light));
-    float NdH = max(0.0, dot(normal, halfVector));
-    float NdV = max(0.0, dot(normal, view));
-    float VdH = max(0.0, dot(view, halfVector));
-    float LdH = max(0.0, dot(light, halfVector));
-
-	vec3 SpecularLighting = vec3(0.0);
-
-	const int NumSamples = 32;
-
-	for( int i = 0; i < NumSamples; i++ )
-	{
-		vec2 Xi = RandomSamples( u_time + float(i) );
-		vec3 H = ImportanceSampleGGX( Xi, roughnessValue, normal );
-
-
-		if( NdL > 0.0 )
-		{
-			float fresnel_fn = F(LdH);
-			float ndf_fn = roughness(NdH, halfVector, normal);
-			float g_fn = geo(NdH, NdV, NdL, VdH);
-
-			SpecularLighting += fresnel_fn * ndf_fn * g_fn * envMap;
-		}
-	}
-	return SpecularLighting / float(NumSamples);
-
-
-    //return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * PI) * shadow(clamp(NdL, 0.0, 1.0));
+float GGX_Distribution(float NdH, float alpha)
+{
+    float alpha2 = alpha * alpha;
+    float NoH2 = NdH * NdH;
+    float den = NoH2 * alpha2 + (1. - NoH2);
+    return (NdH * alpha2) / ( PI * den * den );
 }
 
 float somestep(float t) {
@@ -265,12 +222,54 @@ vec3 textureBlured(samplerCube tex, vec3 tc) {
     return ret / d;
 }
 
-float F_Schlick( const in vec3 specularColor, const in float NdV ) {
-	//return 1.0 - NdV * specularColor;
-	float fresnel = 1.0 - pow(exp2( ( -5.55473 * NdV - 6.98316 ) * NdV ), F0);
-	return -1.0 * fresnel + 1.0;
-}
+float SamplesCount = 6.;
 
+vec3 GGX_Specular( vec3 envMap, vec3 lightDir, vec3 vNormalW, vec3 eyeDir, float roughness, float F0)
+{
+    vec3 reflectionVector = reflect(-eyeDir, vNormalW);
+    vec3 radiance = vec3(0.);
+	vec3 kS = vec3(0.);
+
+    //Vector definition
+	vec3 halfVector = normalize(lightDir + eyeDir);
+	float NdL = max(0.0, dot(vNormalW, lightDir));
+	float NdH = max(0.0, dot(vNormalW, halfVector));
+	float NdV = max(0.0, dot(vNormalW, eyeDir));
+	float VdH = max(0.0, dot(eyeDir, halfVector));
+	float LdH = max(0.0, dot(lightDir, halfVector));
+
+ 	for(float i= 0.; i<=6.; i += 1.) {
+
+    //for(float i = 0.; i < SamplesCount; ++i)    {
+		
+    	// Generate a sample vector in some local space
+        //vec3 sampleVector = GenerateGGXsampleVector(i, SamplesCount, roughness);
+        vec3 sampleVector = eyeDir;
+        // Convert the vector in world space
+        //sampleVector = normalize( mul( sampleVector, vViewPosition ) );
+
+        // Calculate the half vector
+        vec3 halfVector = normalize(sampleVector + eyeDir);
+        float cosT = max(0.0, dot( sampleVector, vNormalW ));
+        float sinT = sqrt( 1. - cosT * cosT);
+
+        // Calculate fresnel
+        vec3 fresnel = vec3(F_Schlick(vec3(0.0,0.0,0.0), clamp(NdV, 0.0, 1.0)));
+        // Geometry term
+        float geometry = GGX_Distribution(NdH, roughnessValue);
+
+        // Calculate the Cook-Torrance denominator
+        float denominator = max(0.0, 4.0 * (NdV * max(0.0, NdH + 0.05)));
+
+        kS += fresnel;
+        // Accumulate the radiance
+        radiance += envMap.rgb * geometry * fresnel * sinT / denominator;
+    }
+
+    // Scale back for the samples count
+    kS = kS / SamplesCount;
+    return radiance / SamplesCount;        
+}
 
 void main(){
 
@@ -279,25 +278,26 @@ void main(){
 
 	//Directions
     #ifdef USE_NORMAL
-        vec3 vNormalW = perturbNormal2Arb(vViewPosition, vWorldNormal);
+        vec3 vNormalW = perturbNormal2Arb(-vViewPosition, vWorldNormal);
     #else
         vec3 vNormalW = vWorldNormal;
     #endif
 
-    vec3 albedo = texture2D(colorMap, vUV).rgb;
+
+    //vec3 albedo = texture2D(colorMap, vUV).rgb;
+    vec3 albedo = vec3(0.8, 0.8, 0.8);
+
+ 	//CUBEMAP
+    vec3 reflection = reflect( vI, vWorldNormal );
+    vec4 envColor = textureCube( envMap, vec3(reflection.x, reflection.yz ) );
+
+    //Vector definition
     vec3 halfVector = normalize(lightDir + eyeDir);
     float NdL = max(0.0, dot(vNormalW, lightDir));
     float NdH = max(0.0, dot(vNormalW, halfVector));
     float NdV = max(0.0, dot(vNormalW, eyeDir));
     float VdH = max(0.0, dot(eyeDir, halfVector));
     float LdH = max(0.0, dot(lightDir, halfVector));
-
-   // apply fog
-    //color = doWonderfullFog( color, pos );
-
-    //CUBEMAP
-    vec3 reflection = reflect( vI, vWorldNormal );
-    vec4 envColor = textureCube( envMap, vec3(reflection.x, reflection.yz ) );
 
 	 // lighting terms
     float occ = texture2D(cookedAO, vUV).r;
@@ -306,27 +306,44 @@ void main(){
     float sky = clamp(0.5 + 0.5 * vNormalW.y, 0.0, 1.0 );
     float ind = clamp(dot(vNormalW, normalize(lightDir * vec3(-1.0,0.0,-1.0))), 0.0, 1.0 );
 
-    float fresnel = pow((1.0 - fresnelTerm) / (1.0 + fresnelTerm), 2.0);
-
-	float fresnel_fn = F(LdH);
-    // reflection        
-    vec3 refl = envColor.rgb;
-    vec3 ibl_reflection = textureBlured(envMap, vec3(reflection.x, reflection.yz ));
-    refl = mix(refl,ibl_reflection,(1.0 - fresnel_fn) * roughnessValue);
+    //Indirect lighting
+    vec3 irradiance = PI * envColor.rgb;
+	irradiance += PI * envColor.rgb * 1.0; //1.0 Intensity
+	
+	vec3 directDiffuse = irradiance * (0.31830988618 * albedo);
+	vec3 indirectDiffuse = irradiance * (0.31830988618 * albedo) * occ * shadow(clamp(NdL, 0.0, 1.0)) * NdL;
 
     // compute lighting
-    vec3 lin  = sun * vec3(1.64,1.27,0.99) * pow(vec3(sha), vec3(1.0,1.2,1.5));
-         lin += sky * vec3(0.16,0.20,0.28) * occ;	
+    vec3 lin  = sun * vec3(envColor.rgb) * pow(vec3(sha), vec3(1.0,1.2,1.5));
+         lin += sky * vec3(0.16,0.20,0.28) * occ;
          lin += ind * vec3(0.40,0.28,0.20) * occ;
 
-    vec3 color = albedo * lin;
-	vec3 outCook = mix(cookTorr(vNormalW, lightDir, eyeDir, envColor.rgb), refl, fresnelTerm);
-	//vec3 outCook = cookTorr(vNormalW, lightDir, eyeDir, envColor.rgb);
-    
+	vec3 material = albedo * NdL;
+
+    vec3 color = material * lin;
+
+    //color += (clamp(cookTorr, 0.0, 1.0) * 0.1);
+
     // gamma correction
-    color = pow(color, vec3(1.0/2.2) );
+    
 
-    gl_FragColor = vec4(color + outCook, 1.0);
+    float fresn = F_Schlick( vec3(0.0,0.0,0.0), clamp(NdV, 0.0, 1.0));
+    // reflection        
+    vec3 refl = envColor.rgb;
 
-    //gl_FragColor = vec4( diffuseColor + specColor + u_ambientColor * u_diffuseColor, 1.0);
+    vec3 ibl_reflection = textureBlured(envMap, vec3(reflection.x, reflection.yz ));
+
+    refl = mix(refl,ibl_reflection,(1.0 - fresn) * roughnessValue);
+    refl = mix(refl,ibl_reflection,roughnessValue);
+
+    vec3 specularEnvironmentR0 = envColor.rgb;
+	vec3 specularEnvironmentR90 = vec3(1.0, 1.0, 1.0);
+
+    //Cook Torrance specular
+    vec3 cookTorr = (mix(color, refl,fresn) * GGX_Distribution(NdH, roughnessValue) * roughness(NdH, halfVector, vNormalW)) / (NdV * NdL);
+    
+	//color += vec3(cookTorr * irradiance);
+	color = pow(color, vec3(1.0/2.2) );
+
+    gl_FragColor = vec4(color, 1.0);
 }

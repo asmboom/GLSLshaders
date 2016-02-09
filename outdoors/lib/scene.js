@@ -31,7 +31,7 @@ require(["threejs", "orbit", "gui", "sky",
         "text!../data/shaders/postpro.vert",
         "text!../data/shaders/postpro.frag",
     ],
-    function (threejs, orbit, xGUI, xSky, depthV, depthF, phongV, CookF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
+    function(threejs, orbit, xGUI, xSky, depthV, depthF, phongV, CookF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
 
         var SCREEN_WIDTH = window.innerWidth;
         var SCREEN_HEIGHT = window.innerHeight;
@@ -43,6 +43,9 @@ require(["threejs", "orbit", "gui", "sky",
         var cubeTarget, cubeTest, cubeCamera;
 
         var shadProjMatrix, lgtMatrix;
+
+        var startTime = new Date();
+        var monkeyMaterial;
 
         var sky, skyScene;
         var scene, colorScene, normalScene, posScene, depthSecene, shadowScene;
@@ -71,7 +74,7 @@ require(["threejs", "orbit", "gui", "sky",
         var dirLight;
 
         var jsonLoader = new THREE.ObjectLoader();
-        jsonLoader.load("data/scene.json", function (loadedScene) {
+        jsonLoader.load("data/scene.json", function(loadedScene) {
 
             scene = loadedScene;
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500000);
@@ -111,133 +114,77 @@ require(["threejs", "orbit", "gui", "sky",
             renderer.shadowMap.render(scene);
             renderer.render(scene, camera);
 
-            uniforms = {
-                shadMatrix: {
-                    type: "m4",
-                    value: spotLight.shadow.matrix
-                },
-                shadowTexture: {
-                    type: "t",
-                    value: spotLight.shadow.map
-                },
-                shadowTextureSize: {
-                    type: "v2",
-                    value: new THREE.Vector2(spotLight.shadow.map.width, spotLight.shadow.map.height)
-                },
-                shadBias: {
-                    type: "f",
-                    value: spotLight.shadow.bias
-                },
-                shadDarkness: {
-                    type: "f",
-                    value: spotLight.shadow.darkness
-                },
-                lightPos: {
-                    type: "v4",
-                    value: spotLight.position
-                },
-                sceneAmbient: {
-                    type: "c",
-                    value: ambient.color
-                },
-                colorMap: {
-                    type: "t",
-                    value: []
-                },
-                cookedAO: {
-                    type: "t",
-                    value: []
-                },
-                normalMap: {
-                    type: "t",
-                    value: []
-                },
-                GGXDistribution: {
-                    type: "f",
-                    value: 0.5
-                },
-                GGXGeometry: {
-                    type: "f",
-                    value: 0.5
-                },
-                FresnelAbsortion: {
-                    type: "f",
-                    value: 0.5
-                },
-                FresnelIOR: {
-                    type: "f",
-                    value: 1.3
-                },
-                envMap: {
-                    type: "t",
-                    value: []
-                }
+            var uniformStruct = function() {
+                var struct = {
+                    shadMatrix: {
+                        type: "m4",
+                        value: spotLight.shadow.matrix
+                    },
+                    shadowTexture: {
+                        type: "t",
+                        value: spotLight.shadow.map
+                    },
+                    shadowTextureSize: {
+                        type: "v2",
+                        value: new THREE.Vector2(spotLight.shadow.map.width, spotLight.shadow.map.height)
+                    },
+                    shadBias: {
+                        type: "f",
+                        value: spotLight.shadow.bias
+                    },
+                    shadDarkness: {
+                        type: "f",
+                        value: spotLight.shadow.darkness
+                    },
+                    lightPos: {
+                        type: "v4",
+                        value: spotLight.position
+                    },
+                    sceneAmbient: {
+                        type: "c",
+                        value: ambient.color
+                    },
+                    colorMap: {
+                        type: "t",
+                        value: []
+                    },
+                    cookedAO: {
+                        type: "t",
+                        value: []
+                    },
+                    normalMap: {
+                        type: "t",
+                        value: []
+                    },
+                    envMap: {
+                        type: "t",
+                        value: []
+                    },
+                    roughnessValue: {
+                        type: "f",
+                        value: []
+                    },
+                    fresnelTerm: {
+                        type: "f",
+                        value: 0
+                    },
+                    F0: {
+                        type: "f",
+                        value: []
+                    },
+                    u_time: {
+                        type: "f",
+                        value: []
+                    }
+                };
+
+                return struct;
             };
 
-            var uniformsPlane = {
-                shadMatrix: {
-                    type: "m4",
-                    value: spotLight.shadow.matrix
-                },
-                shadowTexture: {
-                    type: "t",
-                    value: spotLight.shadow.map
-                },
-                shadowTextureSize: {
-                    type: "v2",
-                    value: new THREE.Vector2(spotLight.shadow.map.width, spotLight.shadow.map.height)
-                },
-                shadBias: {
-                    type: "f",
-                    value: spotLight.shadow.bias
-                },
-                shadDarkness: {
-                    type: "f",
-                    value: spotLight.shadow.darkness
-                },
-                lightPos: {
-                    type: "v4",
-                    value: spotLight.position
-                },
-                sceneAmbient: {
-                    type: "c",
-                    value: ambient.color
-                },
-                colorMap: {
-                    type: "t",
-                    value: []
-                },
-                cookedAO: {
-                    type: "t",
-                    value: []
-                },
-                normalMap: {
-                    type: "t",
-                    value: []
-                },
-                GGXDistribution: {
-                    type: "f",
-                    value: []
-                },
-                GGXGeometry: {
-                    type: "f",
-                    value: []
-                },
-                FresnelAbsortion: {
-                    type: "f",
-                    value: []
-                },
-                FresnelIOR: {
-                    type: "f",
-                    value: []
-                },
-                envMap: {
-                    type: "t",
-                    value: []
-                }
-            };
+            uniforms = new uniformStruct();
+            var uniformsPlane = new uniformStruct();
 
-            var monkeyMaterial = new THREE.ShaderMaterial({
+            monkeyMaterial = new THREE.ShaderMaterial({
                 uniforms: uniforms,
                 vertexShader: phongV,
                 fragmentShader: CookF
@@ -250,20 +197,20 @@ require(["threejs", "orbit", "gui", "sky",
             });
 
             var textureLoader = new THREE.TextureLoader();
-            textureLoader.load("data/color.jpg", function (tex) {
+            textureLoader.load("data/color.jpg", function(tex) {
                 monkeyMaterial.uniforms.colorMap.value = tex;
                 planeMaterial.uniforms.colorMap.value = sky.material;
             });
 
-            textureLoader.load("data/monkey_normal.jpg", function (tex) {
+            textureLoader.load("data/monkey_normal.jpg", function(tex) {
                 monkeyMaterial.uniforms.normalMap.value = tex;
             });
 
-            textureLoader.load("data/monkey.jpg", function (tex) {
+            textureLoader.load("data/monkey.jpg", function(tex) {
                 monkeyMaterial.uniforms.cookedAO.value = tex;
             });
 
-            textureLoader.load("data/floor.png", function (tex) {
+            textureLoader.load("data/floor.png", function(tex) {
                 planeMaterial.uniforms.cookedAO.value = tex;
             });
 
@@ -279,7 +226,7 @@ require(["threejs", "orbit", "gui", "sky",
                 USE_NORMAL: true
             };
 
-            scene.traverse(function (obj) {
+            scene.traverse(function(obj) {
                 if (obj instanceof THREE.Mesh) {
                     obj.castShadow = true;
                     obj.receiveShadow = true;
@@ -287,7 +234,7 @@ require(["threejs", "orbit", "gui", "sky",
             });
 
             scene.getObjectByName("Suzanne").material = monkeyMaterial;
-            //scene.getObjectByName("Plane").material = planeMaterial;
+            scene.getObjectByName("Plane").material = planeMaterial;
             scene.remove(scene.getObjectByName("Plane"));
             monkeyMaterial.uniforms.envMap.value = cubeCamera.renderTarget;
             planeMaterial.uniforms.envMap.value = cubeCamera.renderTarget;
@@ -302,45 +249,6 @@ require(["threejs", "orbit", "gui", "sky",
 
             var gui = new dat.GUI();
 
-            var gui, shaderConfig = {
-                /*GGXDistribution: 0.5,
-                 GGXGeometry: 0.5,
-                 FresnelAbsortion: 2,
-                 FresnelIOR: 1.4,*/
-                ShadowFar: 500000,
-                ShadowNear: 250000
-            };
-
-            lightGUI = gui.addFolder("PBR");
-
-
-            /*lightGUI.add(shaderConfig, 'GGXDistribution', .0, 1.0).onChange(function() {
-             scene.getObjectByName("Suzanne").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
-             scene.getObjectByName("Plane").material.uniforms["GGXDistribution"].value = shaderConfig.GGXDistribution;
-             });
-
-             lightGUI.add(shaderConfig, 'GGXGeometry', .0, 100.0).onChange(function() {
-             scene.getObjectByName("Suzanne").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
-             scene.getObjectByName("Plane").material.uniforms["GGXGeometry"].value = shaderConfig.GGXGeometry;
-             });
-
-             lightGUI.add(shaderConfig, 'FresnelAbsortion', .0, 2.0).onChange(function() {
-             scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-             scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-             });
-
-             lightGUI.add(shaderConfig, 'FresnelIOR', .0, 3.0).onChange(function() {
-             scene.getObjectByName("Suzanne").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-             scene.getObjectByName("Plane").material.uniforms["FresnelAbsortion"].value = shaderConfig.FresnelAbsortion;
-             });*/
-
-            lightGUI.add(shaderConfig, 'ShadowFar', .0, 5000000).onChange(function () {
-                spotLight.shadow.camera.far = shaderConfig.ShadowFar;
-            });
-
-            lightGUI.add(shaderConfig, 'ShadowNear', .0, 5000000).onChange(function () {
-                spotLight.shadow.camera.near = shaderConfig.ShadowNear;
-            });
 
             var effectController = {
                 turbidity: 11,
@@ -350,19 +258,19 @@ require(["threejs", "orbit", "gui", "sky",
                 luminance: 1,
                 inclination: 0.21, // elevation / inclination
                 azimuth: 0.26, // Facing front,
+                Roughness: 0.5,
+                Metalness: 0.17,
+                Reflectivity: 0.17,
                 sun: !true
             };
 
             var distance = 400000;
 
-            gui.add(effectController, "turbidity", 1.0, 20.0, 0.1).onChange(guiChanged);
-            gui.add(effectController, "reileigh", 0.0, 4, 0.001).onChange(guiChanged);
-            gui.add(effectController, "mieCoefficient", 0.0, 0.1, 0.001).onChange(guiChanged);
-            gui.add(effectController, "mieDirectionalG", 0.0, 1, 0.001).onChange(guiChanged);
-            gui.add(effectController, "luminance", 0.0, 2).onChange(guiChanged);
             gui.add(effectController, "inclination", 0, 1, 0.0001).onChange(guiChanged);
             gui.add(effectController, "azimuth", 0, 1, 0.0001).onChange(guiChanged);
-            //gui.add(effectController, "sun").onChange(guiChanged);
+            gui.add(effectController, "Roughness", 0.01, 1, 0.5).onChange(guiChanged);
+            gui.add(effectController, "Metalness", 0, 1, 0.17).onChange(guiChanged);
+            gui.add(effectController, "Reflectivity", 0, 1, 0.17).onChange(guiChanged);
 
             function guiChanged() {
 
@@ -373,6 +281,10 @@ require(["threejs", "orbit", "gui", "sky",
                 uniforms.mieCoefficient.value = effectController.mieCoefficient;
                 uniforms.mieDirectionalG.value = effectController.mieDirectionalG;
 
+                planeMaterial.uniforms.roughnessValue.value = monkeyMaterial.uniforms.roughnessValue.value = effectController.Roughness;
+                planeMaterial.uniforms.F0.value = monkeyMaterial.uniforms.F0.value = effectController.Metalness;
+                planeMaterial.uniforms.fresnelTerm.value = monkeyMaterial.uniforms.fresnelTerm.value = effectController.Reflectivity;
+
                 var theta = Math.PI * (effectController.inclination - 0.5);
                 var phi = 2 * Math.PI * (effectController.azimuth - 0.5);
 
@@ -380,44 +292,15 @@ require(["threejs", "orbit", "gui", "sky",
                 spotLight.position.y = distance * Math.sin(phi) * Math.sin(theta) * 0.01;
                 spotLight.position.z = distance * Math.sin(phi) * Math.cos(theta) * 0.01;
 
-                console.log(spotLight.position.y);
-                //spotLight.target = new THREE.Vector3(0, 0, 0);
-                //spotLight.visible = effectController.sun;
-
                 sky.uniforms.sunPosition.value.copy(spotLight.position);
-
-                //renderer.render(scene, camera);
             }
 
             guiChanged();
-            /*
-             colorGUI = gui.addFolder("Color");
 
-             colorGUI.add(shaderConfig, 'outline', 0, 0.025).onChange(function() {
-             outlineStatic.uniforms.offset.value = shaderConfig.outline;
-             outlineMaterial.uniforms.offset.value = shaderConfig.outline;
-             });
-
-             colorGUI.add(shaderConfig, 'paint').onChange(function() {
-             if (!shaderConfig.paint) {
-             customStatic.uniforms.matcapMap.value = textures["blank"];
-             customMaterial.uniforms.matcapMap.value = textures["blank"];
-             } else {
-             customStatic.uniforms.matcapMap.value = textures["ink"];
-             customMaterial.uniforms.matcapMap.value = textures["ink"];
-             }
-             });
-
-             colorGUI.add(shaderConfig, 'hatches').onChange(function() {
-             customStatic.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
-             customMaterial.uniforms.hatchesTest.value = shaderConfig.hatches ? 1 : 0;
-             });*/
-
-            lightGUI.open();
 
 
             animate();
-            //skyScene = scene.clone();
+
         });
 
         function animate() {
@@ -427,6 +310,7 @@ require(["threejs", "orbit", "gui", "sky",
 
             cubeCamera.updateCubeMap(renderer, skyScene);
             controls.update();
+            monkeyMaterial.uniforms.u_time.value = (new Date() - startTime) * 0.001;
             helper.update();
         };
 
@@ -438,8 +322,6 @@ require(["threejs", "orbit", "gui", "sky",
             scene.add(skyObject);
 
             var _params = {
-                //minFilter: THREE.LinearFilter,
-                //magFilter: THREE.NearestFilter,
                 format: THREE.RGBAFormat
             };
 
