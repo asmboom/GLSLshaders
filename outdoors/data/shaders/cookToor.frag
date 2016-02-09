@@ -139,15 +139,6 @@ float geo(float NdH, float NdV, float NdL, float VdH){
     return min(1.0, min(g1, g2));
 }
 
-// fresnel
-float F_Schlick(float VdH){
-    // Schlick approximation
-    float fresnelTerm = pow(1.0 - VdH, 5.0);
-    fresnelTerm *= (1.0 - F0);
-    fresnelTerm += F0;
-    return fresnelTerm;
-}
-
 float F(float LdH) {
 	float powTerm = (-5.55473 * LdH - 6.98316) * LdH;
 	return F0 + (1.0 - F0) * pow(2.0, powTerm);
@@ -176,7 +167,7 @@ vec3 ImportanceSampleGGX( vec2 Xi, float Roughness, vec3 N ) {
 	return H;
 }
 
-vec3 cookTorr(vec3 normal, vec3 light, vec3 view, vec3 envMap){
+vec3 cookTorr(vec3 normal, vec3 light, vec3 view, vec3 envMap, vec3 ibl_reflection){
     //Terms
     vec3 halfVector = normalize(light + view);
     float NdL = max(0.0, dot(normal, light));
@@ -201,13 +192,10 @@ vec3 cookTorr(vec3 normal, vec3 light, vec3 view, vec3 envMap){
 			float ndf_fn = roughness(NdH, halfVector, normal);
 			float g_fn = geo(NdH, NdV, NdL, VdH);
 
-			SpecularLighting += fresnel_fn * ndf_fn * g_fn * envMap;
+			SpecularLighting += fresnel_fn * ndf_fn * g_fn * mix(ibl_reflection, envMap, roughnessValue);
 		}
 	}
 	return SpecularLighting / float(NumSamples);
-
-
-    //return (fresnel(VdH) * geo(NdH, NdV, NdL, VdH) * roughness(NdH, halfVector, normal)) / (NdV * NdL * PI) * shadow(clamp(NdL, 0.0, 1.0));
 }
 
 float somestep(float t) {
@@ -307,26 +295,23 @@ void main(){
     float ind = clamp(dot(vNormalW, normalize(lightDir * vec3(-1.0,0.0,-1.0))), 0.0, 1.0 );
 
     float fresnel = pow((1.0 - fresnelTerm) / (1.0 + fresnelTerm), 2.0);
-
-	float fresnel_fn = F(LdH);
-    // reflection        
-    vec3 refl = envColor.rgb;
-    vec3 ibl_reflection = textureBlured(envMap, vec3(reflection.x, reflection.yz ));
-    refl = mix(refl,ibl_reflection,(1.0 - fresnel_fn) * roughnessValue);
-
+	float fresnel_fn = F_Schlick(envColor.rgb, NdV);
+   
     // compute lighting
     vec3 lin  = sun * vec3(1.64,1.27,0.99) * pow(vec3(sha), vec3(1.0,1.2,1.5));
-         lin += sky * vec3(0.16,0.20,0.28) * occ;	
+         lin += sky * vec3(envColor.rgb) * occ;	
          lin += ind * vec3(0.40,0.28,0.20) * occ;
 
     vec3 color = albedo * lin;
-	vec3 outCook = mix(cookTorr(vNormalW, lightDir, eyeDir, envColor.rgb), refl, fresnelTerm);
-	//vec3 outCook = cookTorr(vNormalW, lightDir, eyeDir, envColor.rgb);
-    
+
+     // reflection        
+    vec3 refl = envColor.rgb;
+    vec3 ibl_reflection = textureBlured(envMap, vec3(reflection.x, reflection.yz ));
+    refl = mix(refl,ibl_reflection * color,(1.0 - fresnel_fn) * roughnessValue) ;
+
+	vec3 outCook = mix(cookTorr(vNormalW, lightDir, eyeDir, envColor.rgb, ibl_reflection), refl, fresnelTerm) * sha;
+
     // gamma correction
-    color = pow(color, vec3(1.0/2.2) );
-
+    color = pow(color * ibl_reflection, vec3(1.0/2.2) );
     gl_FragColor = vec4(color + outCook, 1.0);
-
-    //gl_FragColor = vec4( diffuseColor + specColor + u_ambientColor * u_diffuseColor, 1.0);
 }

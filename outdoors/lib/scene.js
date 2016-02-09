@@ -270,7 +270,7 @@ require(["threejs", "orbit", "gui", "sky",
             gui.add(effectController, "azimuth", 0, 1, 0.0001).onChange(guiChanged);
             gui.add(effectController, "Roughness", 0.01, 1, 0.5).onChange(guiChanged);
             gui.add(effectController, "Metalness", 0, 1, 0.17).onChange(guiChanged);
-            gui.add(effectController, "Reflectivity", 0, 1, 0.17).onChange(guiChanged);
+            gui.add(effectController, "Reflectivity", 0, 2, 0.17).onChange(guiChanged);
 
             function guiChanged() {
 
