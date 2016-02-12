@@ -10,6 +10,8 @@ uniform sampler2D normalMap;
 uniform sampler2D textureSpec;
 uniform sampler2D cookedAO;
 uniform samplerCube envMap;
+uniform sampler2D roughnessMap;
+uniform sampler2D metalMap;
 
 varying vec2 vUV;
 varying vec3 vNormal;
@@ -115,16 +117,16 @@ float somestep(float t) {
 vec3 textureAVG(samplerCube tex, vec3 tc) {
     const float diff0 = 0.35;
     const float diff1 = 0.12;
-    vec3 s0 = textureCube(tex,tc).xyz;
-    vec3 s1 = textureCube(tex,tc+vec3(diff0)).xyz;
-    vec3 s2 = textureCube(tex,tc+vec3(-diff0)).xyz;
-    vec3 s3 = textureCube(tex,tc+vec3(-diff0,diff0,-diff0)).xyz;
-    vec3 s4 = textureCube(tex,tc+vec3(diff0,-diff0,diff0)).xyz;
+    vec3 s0 = pow(textureCube(tex,tc).xyz, vec3(2.2));
+    vec3 s1 = pow(textureCube(tex,tc+vec3(diff0)).xyz, vec3(2.2));
+    vec3 s2 = pow(textureCube(tex,tc+vec3(-diff0)).xyz, vec3(2.2));
+    vec3 s3 = pow(textureCube(tex,tc+vec3(-diff0,diff0,-diff0)).xyz, vec3(2.2));
+    vec3 s4 = pow(textureCube(tex,tc+vec3(diff0,-diff0,diff0)).xyz, vec3(2.2));
     
-    vec3 s5 = textureCube(tex,tc+vec3(diff1)).xyz;
-    vec3 s6 = textureCube(tex,tc+vec3(-diff1)).xyz;
-    vec3 s7 = textureCube(tex,tc+vec3(-diff1,diff1,-diff1)).xyz;
-    vec3 s8 = textureCube(tex,tc+vec3(diff1,-diff1,diff1)).xyz;
+    vec3 s5 = pow(textureCube(tex,tc+vec3(diff1)).xyz, vec3(2.2));
+    vec3 s6 = pow(textureCube(tex,tc+vec3(-diff1)).xyz, vec3(2.2));
+    vec3 s7 = pow(textureCube(tex,tc+vec3(-diff1,diff1,-diff1)).xyz, vec3(2.2));
+    vec3 s8 = pow(textureCube(tex,tc+vec3(diff1,-diff1,diff1)).xyz, vec3(2.2));
     
     return (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8) * 0.111111111;
 }
@@ -216,7 +218,36 @@ float F(float LdH) {
     return F0 + (1.0 - F0) * pow(2.0, powTerm);
 }
 
-vec3 cookTorr(vec3 normal, vec3 light, vec3 view, vec3 envMap, vec3 ibl_reflection){
+
+// From Microfacet Models for Refraction through Rough Surfaces, Walter et al. 2007
+float smithVisibilityG1_TrowbridgeReitzGGX(float dot, float alphaG){
+    float tanSquared = (1.0 - dot * dot) / (dot * dot);
+    return 2.0 / (1.0 + sqrt(1.0 + alphaG * alphaG * tanSquared));
+}
+
+float smithVisibilityG_TrowbridgeReitzGGX_Walter(float NdotL, float NdotV, float alphaG){
+    return smithVisibilityG1_TrowbridgeReitzGGX(NdotL, alphaG) * smithVisibilityG1_TrowbridgeReitzGGX(NdotV, alphaG);
+}
+
+// Trowbridge-Reitz (GGX)
+// Generalised Trowbridge-Reitz with gamma power=2.0
+float normalDistributionFunction_TrowbridgeReitzGGX(float NdotH, float alphaG){
+    // Note: alphaG is average slope (gradient) of the normals in slope-space.
+    // It is also the (trigonometric) tangent of the median distribution value, i.e. 50% of normals have
+    // a tangent (gradient) closer to the macrosurface than this slope.
+    float a2 = sqrt(alphaG);
+    float d = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    return a2 / (PI * d * d);
+}
+
+vec3 FresnelSchlickEnvironmentGGX(float VdotN, vec3 reflectance0, vec3 reflectance90, float smoothness)
+{
+    // Schlick fresnel approximation, extended with basic smoothness term so that rough surfaces do not approach reflectance90 at grazing angle
+    float weight = mix(0.25, 1.0, smoothness);
+    return clamp(reflectance0 + weight * (reflectance90 - reflectance0) * pow(clamp(1.0 - VdotN, 0., 1.), 5.0), 0.0, 1.0);
+}
+
+vec3 specularTerm(vec3 normal, vec3 light, vec3 view, vec3 envMap, vec3 ibl_reflection){
     //Terms
     vec3 halfVector = normalize(light + view);
     float NdL = max(0.0, dot(normal, light));
@@ -227,24 +258,43 @@ vec3 cookTorr(vec3 normal, vec3 light, vec3 view, vec3 envMap, vec3 ibl_reflecti
 
     vec3 SpecularLighting = vec3(0.0);
 
-    const int NumSamples = 32;
-
-    for( int i = 0; i < NumSamples; i++ )
+    if( NdL > 0.0 )
     {
-        vec2 Xi = RandomSamples( u_time + float(i) );
-        vec3 H = ImportanceSampleGGX( Xi, roughnessValue, normal );
+        float fresnel = max(1.0 - NdV, 0.0);
+        fresnel = pow(fresnel, sqrt(roughnessValue));    
 
+        vec3 fresnel_fn = FresnelSchlickEnvironmentGGX(NdV, ibl_reflection, envMap, sqrt(roughnessValue));
+        float distribution = normalDistributionFunction_TrowbridgeReitzGGX(NdH, roughnessValue);
+        float geometry = smithVisibilityG_TrowbridgeReitzGGX_Walter(NdL, NdV, sqrt(roughnessValue)) / (4.0 * NdL * NdV);
 
-        if( NdL > 0.0 )
-        {
-            float fresnel_fn = F(LdH);
-            float ndf_fn = roughness(NdH, halfVector, normal);
-            float g_fn = geo(NdH, NdV, NdL, VdH);
-
-            SpecularLighting += fresnel_fn * ndf_fn * g_fn * mix(ibl_reflection, envMap, roughnessValue);
-        }
+        float specTerm = max(0., geometry * distribution) * NdL;
+        return fresnel_fn * specTerm * PI; // TODO: audit pi constants
     }
-    return SpecularLighting / float(NumSamples);
+
+    return SpecularLighting;
+}
+
+float computeDiffuseTerm(vec3 normal, vec3 light, vec3 view)
+{
+    //Terms
+    vec3 halfVector = normalize(light + view);
+    float NdL = max(0.0, dot(normal, light));
+    float NdH = max(0.0, dot(normal, halfVector));
+    float NdV = max(0.0, dot(normal, view));
+    float VdH = max(0.0, dot(view, halfVector));
+    float LdH = max(0.0, dot(light, halfVector));
+
+    // Diffuse fresnel falloff as per Disney principled BRDF, and in the spirit of
+    // of general coupled diffuse/specular models e.g. Ashikhmin Shirley.
+    float diffuseFresnelNV = pow(clamp(1.0 - NdL, 0.000001, 1.), 5.0);
+    float diffuseFresnelNL = pow(clamp(1.0 - NdV, 0.000001, 1.), 5.0);
+    float diffuseFresnel90 = 0.5 + 2.0 * VdH * VdH * roughnessValue;
+    float diffuseFresnelTerm =
+        (1.0 + (diffuseFresnel90 - 1.0) * diffuseFresnelNL) *
+        (1.0 + (diffuseFresnel90 - 1.0) * diffuseFresnelNV);
+
+
+    return diffuseFresnelTerm * NdL;
 }
 
 void main(){
@@ -260,6 +310,7 @@ void main(){
     #endif
 
     vec3 albedo = texture2D(colorMap, vUV).rgb;
+    
     //CUBEMAP
     vec3 reflection = reflect( vI, vWorldNormal );
 
@@ -270,23 +321,34 @@ void main(){
      // fresnel
     float fresnel = max(1.0 - dot(vNormalW, eyeDir), 0.0);
     fresnel = pow(fresnel, fresnelTerm);    
-   
-    // reflection        
-    vec3 envColor = textureCube(envMap, vec3(reflection.x, reflection.yz )).rgb;
-    vec3 refl = mix(envColor, ibl_reflection, (1.0 - fresnel) * roughnessValue);
-    refl = mix(refl,ibl_reflection, roughnessValue);
 
+    // reflection        
+    vec3 envColor = pow(textureCube(envMap, vec3(reflection.x, reflection.yz )).rgb, vec3(2.2));
+
+    vec3 refl = mix(envColor, ibl_reflection, (1.0 - fresnel) * roughnessValue);
+    refl = mix(ibl_reflection, refl, fresnel * roughnessValue);
+
+    float NdL = max(0.0, dot(vNormalW, lightDir));
+    vec3 irradiance = NdL * PI * ibl_reflection;
+
+    vec3 directDiffuse = irradiance * RECIPROCAL_PI * albedo;
+    vec3 indirectDiffse = ibl_reflection * RECIPROCAL_PI * albedo;
     //TODO: Añadir Cook-Toorance
     //specular
     float power = 1.0 / max(roughnessValue * 0.4, 0.01);
     vec3 spec = (envColor * 1.2) * phong(lightDir, eyeDir, vNormalW, power);
     refl -= spec;
 
+    float diffuseTerm = computeDiffuseTerm(vNormalW, lightDir, eyeDir);
     // diffuse
-    vec3 diff = ibl_diffuse;
-    diff = mix(diff * albedo,refl,fresnel);  
+    vec3 diff = ibl_reflection;
+    diff += mix(diff * albedo * diffuseTerm, refl * albedo, fresnel);  
 
-    vec3 color = mix(ibl_reflection, refl * albedo, F0);
 
-    gl_FragColor = vec4(color, 1.0);
+    
+    vec3 color = pow(diff * albedo, vec3(1.0/2.2));
+
+    vec3 cookT = specularTerm(vNormalW, lightDir, eyeDir, envColor, ibl_reflection) * refl;
+
+    gl_FragColor = vec4(directDiffuse + indirectDiffse, 1.0);
 }

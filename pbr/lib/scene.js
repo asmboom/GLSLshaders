@@ -156,6 +156,14 @@ require(["threejs", "orbit", "gui",
                     u_time: {
                         type: "f",
                         value: []
+                    },
+                    roughnessMap: {
+                        type: "t",
+                        value: []
+                    },
+                    metalMap: {
+                        type: "t",
+                        value: []
                     }
                 };
 
@@ -171,16 +179,12 @@ require(["threejs", "orbit", "gui",
             });
 
             var textureLoader = new THREE.TextureLoader();
-            textureLoader.load("data/color.jpg", function(tex) {
+            textureLoader.load("data/Cerberus_A.jpg", function(tex) {
                 monkeyMaterial.uniforms.colorMap.value = tex;
             });
 
-            textureLoader.load("data/monkey_normal.jpg", function(tex) {
+            textureLoader.load("data/Cerberus_N.jpg", function(tex) {
                 monkeyMaterial.uniforms.normalMap.value = tex;
-            });
-
-            textureLoader.load("data/monkey.jpg", function(tex) {
-                monkeyMaterial.uniforms.cookedAO.value = tex;
             });
 
             monkeyMaterial.extensions.derivatives = true; //r74
@@ -224,18 +228,18 @@ require(["threejs", "orbit", "gui",
 
             var effectController = {
                 Roughness: 0.5,
-                Metalness: 0.17,
-                Reflectivity: 0.17
+                Reflectivity: 0.17,
+                Metalness: 0.17
             };
 
             gui.add(effectController, "Roughness", 0.01, 1, 0.5).onChange(guiChanged);
+            //gui.add(effectController, "Reflectivity", 0, 1, 0.17).onChange(guiChanged);
             gui.add(effectController, "Metalness", 0, 1, 0.17).onChange(guiChanged);
-            gui.add(effectController, "Reflectivity", 0, 2, 0.17).onChange(guiChanged);
 
             function guiChanged() {
                 monkeyMaterial.uniforms.roughnessValue.value = effectController.Roughness;
-                monkeyMaterial.uniforms.F0.value = effectController.Metalness;
-                monkeyMaterial.uniforms.fresnelTerm.value = effectController.Reflectivity;
+                monkeyMaterial.uniforms.F0.value = effectController.Reflectivity;
+                monkeyMaterial.uniforms.fresnelTerm.value = effectController.Metalness;
             }
 
             guiChanged();
