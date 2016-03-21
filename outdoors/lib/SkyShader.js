@@ -225,12 +225,13 @@ THREE.ShaderLib['sky'] = {
         "vec3 curr = Uncharted2Tonemap((log2(2.0/pow(luminance,4.0)))*texColor);",
         "vec3 color = curr*whiteScale;",
 
-        "vec3 retColor = pow(color,vec3(1.0/(1.2+(1.2*sunfade))));",
+        "vec3 retColor = pow(color,vec3(1.0/(1.2+(1.2* sunfade))));",
 
+        "float colorValue = dot(retColor, vec3(0.3, 0.59, 0.11));",
 
         "gl_FragColor.rgb = retColor;",
 
-        "gl_FragColor.a = 1.0;",
+        "gl_FragColor.a = 1.;",
         "}",
 
     ].join("\n")
@@ -246,6 +247,7 @@ THREE.Sky = function () {
         fragmentShader: skyShader.fragmentShader,
         vertexShader: skyShader.vertexShader,
         uniforms: skyUniforms,
+        transparent: true,
         side: THREE.BackSide
     });
 

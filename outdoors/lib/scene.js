@@ -23,34 +23,24 @@ require(["threejs", "orbit", "gui", "sky",
         "text!../data/shaders/depth.vert",
         "text!../data/shaders/depth.frag",
         "text!../data/shaders/phong.vert",
-        "text!../data/shaders/cookToor.frag",
-        "text!../data/shaders/color.frag",
-        "text!../data/shaders/normal.frag",
-        "text!../data/shaders/position.frag",
-        "text!../data/shaders/shadow.frag",
-        "text!../data/shaders/postpro.vert",
-        "text!../data/shaders/postpro.frag",
+        "text!../data/shaders/cookToor.frag"
     ],
-    function(threejs, orbit, xGUI, xSky, depthV, depthF, phongV, CookF, ColorF, normalF, positionF, shadowF, postproV, postproF) {
+    function(threejs, orbit, xGUI, xSky, depthV, depthF, phongV, CookF) {
 
         var SCREEN_WIDTH = window.innerWidth;
         var SCREEN_HEIGHT = window.innerHeight;
 
         var controls;
 
-        var camera, orthoCamera, spotLight, uniforms, plane, clock, helper;
+        var camera, spotLight, helper;
 
-        var cubeTarget, cubeTest, cubeCamera;
-
-        var shadProjMatrix, lgtMatrix;
+        var cubeTarget, cubeCamera;
 
         var startTime = new Date();
         var monkeyMaterial;
 
         var sky, skyScene;
-        var scene, colorScene, normalScene, posScene, depthSecene, shadowScene;
-        var mixer;
-        var colorTarget, normalTarget, positionTarget, depthTarget, shadowTarget;
+        var scene;
 
         renderer = new THREE.WebGLRenderer({
             antialias: true
@@ -71,7 +61,6 @@ require(["threejs", "orbit", "gui", "sky",
         document.body.appendChild(renderer.domElement);
 
         var uniforms;
-        var dirLight;
 
         var jsonLoader = new THREE.ObjectLoader();
         jsonLoader.load("data/scene.json", function(loadedScene) {
@@ -168,7 +157,7 @@ require(["threejs", "orbit", "gui", "sky",
                         type: "f",
                         value: 0
                     },
-                    F0: {
+                    metalness: {
                         type: "f",
                         value: []
                     },
@@ -197,9 +186,12 @@ require(["threejs", "orbit", "gui", "sky",
             });
 
             var textureLoader = new THREE.TextureLoader();
-            textureLoader.load("data/color.jpg", function(tex) {
+            textureLoader.load("data/color_green.jpg", function(tex) {
+                planeMaterial.uniforms.colorMap.value = tex;
+            });
+
+            textureLoader.load("data/floor_albedo.jpg", function(tex) {
                 monkeyMaterial.uniforms.colorMap.value = tex;
-                planeMaterial.uniforms.colorMap.value = sky.material;
             });
 
             textureLoader.load("data/monkey_normal.jpg", function(tex) {
@@ -235,20 +227,16 @@ require(["threejs", "orbit", "gui", "sky",
 
             scene.getObjectByName("Suzanne").material = monkeyMaterial;
             scene.getObjectByName("Plane").material = planeMaterial;
-            scene.remove(scene.getObjectByName("Plane"));
+            skyScene.add(scene.getObjectByName("Plane").clone());
+            //scene.remove(scene.getObjectByName("Plane"));
             monkeyMaterial.uniforms.envMap.value = cubeCamera.renderTarget;
             planeMaterial.uniforms.envMap.value = cubeCamera.renderTarget;
 
-            /*scene.getObjectByName("Cube.001").material = new THREE.MeshBasicMaterial({
-             color: 0xFFFFFF,
-             envMap: cubeCamera.renderTarget
-             })*/
             /// GUI
             /////////////////////////////////////
             //
 
             var gui = new dat.GUI();
-
 
             var effectController = {
                 turbidity: 11,
@@ -256,21 +244,21 @@ require(["threejs", "orbit", "gui", "sky",
                 mieCoefficient: 0.025,
                 mieDirectionalG: 0.95,
                 luminance: 1,
-                inclination: 0.21, // elevation / inclination
+                inclination: 0.0, // elevation / inclination
                 azimuth: 0.26, // Facing front,
-                Roughness: 0.5,
-                Metalness: 0.17,
-                Reflectivity: 0.17,
+                Roughness: 0.24,
+                Metalness: 0.5,
                 sun: !true
             };
 
             var distance = 400000;
 
-            gui.add(effectController, "inclination", 0, 1, 0.0001).onChange(guiChanged);
+            gui.add(effectController, "inclination", 0, 1, 0).onChange(guiChanged);
             gui.add(effectController, "azimuth", 0, 1, 0.0001).onChange(guiChanged);
-            gui.add(effectController, "Roughness", 0.01, 1, 0.5).onChange(guiChanged);
-            gui.add(effectController, "Metalness", 0, 1, 0.17).onChange(guiChanged);
-            gui.add(effectController, "Reflectivity", 0, 2, 0.17).onChange(guiChanged);
+            gui.add(effectController, "Roughness", 0.01, 1, 0.24).onChange(guiChanged);
+            gui.add(effectController, "Metalness", 0, 1, 0.5).onChange(guiChanged);
+
+            /* gui.add(effectController, "Reflectivity", 0, 2, 0.17).onChange(guiChanged);*/
 
             function guiChanged() {
 
@@ -282,8 +270,7 @@ require(["threejs", "orbit", "gui", "sky",
                 uniforms.mieDirectionalG.value = effectController.mieDirectionalG;
 
                 planeMaterial.uniforms.roughnessValue.value = monkeyMaterial.uniforms.roughnessValue.value = effectController.Roughness;
-                planeMaterial.uniforms.F0.value = monkeyMaterial.uniforms.F0.value = effectController.Metalness;
-                planeMaterial.uniforms.fresnelTerm.value = monkeyMaterial.uniforms.fresnelTerm.value = effectController.Reflectivity;
+                planeMaterial.uniforms.metalness.value = monkeyMaterial.uniforms.metalness.value = effectController.Metalness;
 
                 var theta = Math.PI * (effectController.inclination - 0.5);
                 var phi = 2 * Math.PI * (effectController.azimuth - 0.5);
@@ -297,8 +284,7 @@ require(["threejs", "orbit", "gui", "sky",
 
             guiChanged();
 
-
-
+            document.querySelector("#loading").style.display = "none";
             animate();
 
         });
@@ -317,15 +303,44 @@ require(["threejs", "orbit", "gui", "sky",
         function initSky() {
             // Add Sky Mesh
             sky = new THREE.Sky();
-            skyScene.add(sky.mesh);
-            var skyObject = sky.mesh.clone();
-            scene.add(skyObject);
 
+            /*var path = "data/cube/skybox/";
+             var format = '.jpg';
+             var urls = [
+             path + 'px' + format, path + 'nx' + format,
+             path + 'py' + format, path + 'ny' + format,
+             path + 'pz' + format, path + 'nz' + format
+             ];
+
+             var reflectionCube = new THREE.CubeTextureLoader().load(urls);
+             reflectionCube.format = THREE.RGBFormat;
+
+             var shader = THREE.ShaderLib["cube"];
+             shader.uniforms["tCube"].value = reflectionCube;
+
+             var cubeMaterial = new THREE.ShaderMaterial({
+             fragmentShader: shader.fragmentShader,
+             vertexShader: shader.vertexShader,
+             uniforms: shader.uniforms,
+             depthWrite: false,
+             side: THREE.BackSide
+             });
+
+             var cubeUniverseGEO = new THREE.CubeGeometry(500, 500, 500);
+             var cubeUniverse = new THREE.Mesh(cubeUniverseGEO, cubeMaterial);
+             scene.add(cubeUniverse);
+             skyScene.add(cubeUniverse.clone());
+             */
             var _params = {
                 format: THREE.RGBAFormat
             };
 
+            skyScene.add(sky.mesh);
+            var skyObject = sky.mesh.clone();
+            scene.add(skyObject);
+
             cubeTarget = new THREE.WebGLRenderTargetCube(1024, 1024, _params);
+
 
         }
     });

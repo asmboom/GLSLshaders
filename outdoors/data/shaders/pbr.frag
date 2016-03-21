@@ -25,8 +25,6 @@ varying vec4 vShadowCoord;
 
 uniform float metalness;
 uniform float roughnessValue;
-uniform float fresnelTerm;
-uniform float u_time;
 
 varying float vReflectionFactor;
 varying vec3 vI;
@@ -36,15 +34,11 @@ const float PI = 3.1415926535897932384626433832795;
 #define RECIPROCAL_PI 0.31830988618
 #define RECIPROCAL_PI2 0.15915494
 
-//PBR values
+float g_lillum = 0.8;
+
+// Linear/Gama Correction
+////////////////////////////////////
 //
-// set important material values
-//float roughnessValue = 0.4; // 0 : smooth, 1: rough
-//float F0 = 2.5; // fresnel reflectance at normal incidence
-float k = 0.4; // fraction of diffuse reflection (specular reflection = 1 - k)
-vec3 lightColor = vec3(0.9);
-
-
 vec3 toLinear(vec3 color) {
     return pow(color, vec3(2.2));
 }
@@ -53,6 +47,9 @@ vec3 toGamma(vec3 color) {
      return pow(color, vec3(1.0 / 2.2));
 }
 
+// BRDF Variable definition
+////////////////////////////////////
+//
 struct BRDFVars
 {
     // The half vector of a microfacet model
@@ -95,19 +92,10 @@ BRDFVars calcBRDFVars(vec3 normal, vec3 ldir, vec3 vdir)
     return BRDFVars(halfVector, NdH, LdH, NdL, NdV, VdH);
 }
 
-
-vec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {
-	return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );
-}
-
-
-float unpackDepth( const in vec4 rgba_depth ) {
-    const vec4 bit_shift = vec4( 1.0 / ( 256.0 * 256.0 * 256.0 ), 1.0 / ( 256.0 * 256.0 ), 1.0 / 256.0, 1.0 );
-    float depth = dot( rgba_depth, bit_shift );
-    return depth;
-}
-
-#ifdef USE_NORMAL 
+// Normal map perturbance
+///////////////////////////////////
+//
+#ifdef USE_NORMAL
 
 vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
     vec3 q0 = dFdx( eye_pos.xyz );
@@ -127,8 +115,14 @@ vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
 
 #endif
 
-float getValue(vec3 color){
-    return dot(color, vec3(0.3, 0.59, 0.11));
+// Shadow map integration
+///////////////////////////////////
+//
+
+float unpackDepth( const in vec4 rgba_depth ) {
+    const vec4 bit_shift = vec4( 1.0 / ( 256.0 * 256.0 * 256.0 ), 1.0 / ( 256.0 * 256.0 ), 1.0 / 256.0, 1.0 );
+    float depth = dot( rgba_depth, bit_shift );
+    return depth;
 }
 
 float shadow(float NdL){
@@ -179,92 +173,10 @@ float shadow(float NdL){
     return max(0.0, shadowCoeff);
 }
 
-// roughness (or: microfacet distribution function)
-float roughness(BRDFVars bvars){
-    float mSquared = roughnessValue * roughnessValue;
-    // beckmann distribution function
-    
-    float r1 = 1.0 / ( 4.0 * mSquared * pow(bvars.NdH, 4.0));
-    float r2 = (bvars.NdH * bvars.NdH - 1.0) / (mSquared * bvars.NdH * bvars.NdH);
-    return r1 * exp(r2);
-}
+// Environment texture blur
+///////////////////////////////////
+//
 
-float geo(BRDFVars bvars){
-    // geometric attenuation
-    float NH2 = 2.0 * bvars.NdH;
-    float g1 = (NH2 * bvars.NdV) / bvars.VdH;
-    float g2 = (NH2 * bvars.NdL) / bvars.VdH;
-    return min(1.0, min(g1, g2));
-}
-
-float F(BRDFVars bvars) {
-	float powTerm = (-5.55473 * bvars.LdH - 6.98316) * bvars.LdH;
-	return metalness + (1.0 - metalness) * pow(2.0, powTerm);
-}
-
-vec3 cookTorr(BRDFVars bvars){
-
-    //Terms
-    vec3 SpecularLighting = vec3(0.0);
-
-	if( bvars.NdL > 0.0 )
-	{
-        float fresnel_fn = F(bvars);
-        float ndf_fn = roughness(bvars);
-        float g_fn = geo(bvars);
-
-        float denominator = max(0.0, 4. * (bvars.NdV * bvars.NdH) + 0.05);
-        SpecularLighting += fresnel_fn * ndf_fn * g_fn / denominator;
-	}
-
-	return vec3(SpecularLighting);
-}
-
-
-// From Microfacet Models for Refraction through Rough Surfaces, Walter et al. 2007
-float smithVisibilityG1_TrowbridgeReitzGGX(float dot, float alphaG){
-    float tanSquared = (1.0 - dot * dot) / (dot * dot);
-    return 2.0 / (1.0 + sqrt(1.0 + alphaG * alphaG * tanSquared));
-}
-
-float smithVisibilityG_TrowbridgeReitzGGX_Walter(float NdotL, float NdotV, float alphaG){
-    return smithVisibilityG1_TrowbridgeReitzGGX(NdotL, alphaG) * smithVisibilityG1_TrowbridgeReitzGGX(NdotV, alphaG);
-}
-
-// Trowbridge-Reitz (GGX)
-// Generalised Trowbridge-Reitz with gamma power=2.0
-float normalDistributionFunction_TrowbridgeReitzGGX(float NdotH, float alphaG){
-    // Note: alphaG is average slope (gradient) of the normals in slope-space.
-    // It is also the (trigonometric) tangent of the median distribution value, i.e. 50% of normals have
-    // a tangent (gradient) closer to the macrosurface than this slope.
-    float a2 = sqrt(alphaG);
-    float d = NdotH * NdotH * (a2 - 1.0) + 1.0;
-    return a2 / (PI * d * d);
-}
-
-vec3 FresnelSchlickEnvironmentGGX(float VdotN, vec3 reflectance0, vec3 reflectance90, float smoothness)
-{
-    // Schlick fresnel approximation, extended with basic smoothness term so that rough surfaces do not approach reflectance90 at grazing angle
-    float weight = mix(0.25, 1.0, smoothness);
-    return clamp(reflectance0 + weight * (reflectance90 - reflectance0) * pow(clamp(1.0 - VdotN, 0., 1.), 5.0), 0.0, 1.0);
-}
-
-vec3 specularTerm(BRDFVars bvars, vec3 envMap, vec3 reflectionColor){
-
-    vec3 SpecularLighting = vec3(0.0);
-
-    if( bvars.NdL > 0.0 )
-    {
-        vec3 fresnel_fn = FresnelSchlickEnvironmentGGX(bvars.NdV, reflectionColor, envMap, sqrt(roughnessValue));
-        float distribution = normalDistributionFunction_TrowbridgeReitzGGX(bvars.NdH, roughnessValue);
-        float geometry = smithVisibilityG_TrowbridgeReitzGGX_Walter(bvars.NdL, bvars.NdV, sqrt(roughnessValue)) / (4.0 * bvars.NdL * bvars.NdV);
-
-        float specTerm = max(0., geometry * distribution) * bvars.NdL;
-        return fresnel_fn * specTerm * PI; // TODO: audit pi constants
-    }
-
-    return SpecularLighting * reflectionColor;
-}
 
 float somestep(float t) {
     return pow(t,4.0);
@@ -278,12 +190,12 @@ vec3 textureAVG(samplerCube tex, vec3 tc) {
     vec3 s2 = textureCube(tex,tc+vec3(-diff0)).xyz;
     vec3 s3 = textureCube(tex,tc+vec3(-diff0,diff0,-diff0)).xyz;
     vec3 s4 = textureCube(tex,tc+vec3(diff0,-diff0,diff0)).xyz;
-    
+
     vec3 s5 = textureCube(tex,tc+vec3(diff1)).xyz;
     vec3 s6 = textureCube(tex,tc+vec3(-diff1)).xyz;
     vec3 s7 = textureCube(tex,tc+vec3(-diff1,diff1,-diff1)).xyz;
     vec3 s8 = textureCube(tex,tc+vec3(diff1,-diff1,diff1)).xyz;
-    
+
     return (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8) * 0.111111111;
 }
 
@@ -294,21 +206,21 @@ vec3 textureBlured(samplerCube tex, vec3 tc) {
     vec3 l = textureAVG(tex,vec3(-1.0,0.0,0.0));
     vec3 b = textureAVG(tex,vec3(0.0,-1.0,0.0));
     vec3 a = textureAVG(tex,vec3(0.0,0.0,-1.0));
-        
-    float kr = dot(tc,vec3(1.0,0.0,0.0)) * 0.5 + 0.5; 
+
+    float kr = dot(tc,vec3(1.0,0.0,0.0)) * 0.5 + 0.5;
     float kt = dot(tc,vec3(0.0,1.0,0.0)) * 0.5 + 0.5;
     float kf = dot(tc,vec3(0.0,0.0,1.0)) * 0.5 + 0.5;
     float kl = 1.0 - kr;
     float kb = 1.0 - kt;
     float ka = 1.0 - kf;
-    
+
     kr = somestep(kr);
     kt = somestep(kt);
     kf = somestep(kf);
     kl = somestep(kl);
     kb = somestep(kb);
-    ka = somestep(ka);    
-    
+    ka = somestep(ka);
+
     float d;
     vec3 ret;
     ret  = f * kf; d  = kf;
@@ -317,17 +229,128 @@ vec3 textureBlured(samplerCube tex, vec3 tc) {
     ret += r * kr; d += kr;
     ret += t * kt; d += kt;
     ret += b * kb; d += kb;
-    
+
     return ret / d;
 }
 
+float calcDistrScalar(BRDFVars bvars)
+{
+    // D(h) factor
+    // using the GGX approximation where the gamma factor is 2.
+
+    // Clamping roughness so that a directional light has a specular
+    // response.  A roughness of perfectly 0 will create light
+    // singularities.
+    float alpha = roughnessValue * roughnessValue;
+    float denom = bvars.NdH* bvars.NdH* (alpha*alpha - 1.) + 1.;
+    float D = (alpha*alpha)/(PI * denom*denom);
+
+    // using the GTR approximation where the gamma factor is generalized
+    //float gamma = 1.;
+    //float sinth = length(cross(surf.normal, bvars.hdir));
+    //float D = 1./pow(alpha*alpha*bvars.costh*bvars.costh + sinth*sinth, gamma);
+
+    return D;
+}
+
+float calcGeomScalar(BRDFVars bvars, float roughness)
+{
+
+    // G(h,l,v) factor
+    float k = roughness / 2.;
+    float Gv = step(0., bvars.NdV) * (bvars.NdV/(bvars.NdV * (1. - k) + k));
+    float Gl = step(0., bvars.NdL) * (bvars.NdL/(bvars.NdL * (1. - k) + k));
+
+    return Gl * Gv;
+}
+
+
+vec3 calcFresnelColor(BRDFVars bvars, vec3 albedo)
+{
+    // F(h,l) factor
+    vec3 F0 = .8 * mix(vec3(1.), albedo, metalness);
+
+    vec3 F = F0 + (1. - F0) * exp2((-5.55473 * bvars.LdH - 6.98316) * bvars.LdH);
+    //vec3 F = F0 + (1. - F0) * pow5(1. - bvars.LdH);
+
+
+    return F;
+}
+
+vec3 integrateDirLight(BRDFVars bvars, vec3 albedo, vec3 ibl_reflection)
+{
+
+
+    vec3 cout = vec3(0.);
+    float ndl = clamp(bvars.NdL, 0., 1.);
+
+    if (ndl > 0.)
+    {
+        vec3 diff = albedo * bvars.NdL;
+
+        // remap hotness of roughness for analytic lights
+        float D = calcDistrScalar(bvars);
+        float G = calcGeomScalar(bvars, (roughnessValue + 1.) * .5);
+        vec3 F  = calcFresnelColor(bvars, albedo);
+
+        vec3 spec = D * F * G / (4. * bvars.NdL * bvars.NdV);
+
+        float shd = shadow(bvars.NdL);
+
+        cout  += spec * ndl * shd * ibl_reflection; //lightcolor;
+    }
+
+    return cout;
+}
+
+
+vec3 sampleEnvLight(BRDFVars bvars, vec3 lcolor, vec3 albedo)
+{
+
+    float ndl = clamp(bvars.NdL, 0., 1.);
+
+    vec3 cout = vec3(0.);
+
+    if (ndl > 0.)
+    {
+
+        float D = calcDistrScalar(bvars);
+        float G = calcGeomScalar(bvars, roughnessValue);
+        vec3 F  = calcFresnelColor(bvars, albedo);
+
+        // Combines the BRDF as well as the pdf of this particular
+        // sample direction.
+        vec3 spec = lcolor * G * F * bvars.LdH / (bvars.NdH * bvars.NdV);
+
+        float shd = shadow(bvars.NdL);
+
+        cout = spec * shd * lcolor;
+    }
+
+    return cout;
+}
+
+vec3 integrateEnvLight(BRDFVars bvars, vec3 tint, vec3 albedo)
+{
+    //CUBEMAP
+    vec3 reflection = reflect( vI, vWorldNormal );
+    vec3 envColor = toLinear(textureCube( envMap, vec3(reflection.x, reflection.yz ) ).rgb);
+    vec3 ibl_reflection = toLinear(textureBlured(envMap, vec3(reflection.x, reflection.yz )));
+
+    vec3 specolor = .4 * mix(envColor,
+                             ibl_reflection,
+                             roughnessValue) * (1. - roughnessValue);
+
+    vec3 envspec = sampleEnvLight(bvars, ibl_reflection * specolor, albedo);
+    return clamp(envspec, 0.0, 1.0);
+}
 
 void main(){
 
-	vec3 lightDir = normalize(lightPos.xyz - vPos);
+    //Directions
+    vec3 lightDir = normalize(lightPos.xyz - vPos);
     vec3 eyeDir = normalize(cameraPosition - vPos);
 
-	//Directions
     #ifdef USE_NORMAL
         vec3 vNormalW = perturbNormal2Arb(vViewPosition, vWorldNormal);
     #else
@@ -336,48 +359,23 @@ void main(){
 
     BRDFVars bvars = calcBRDFVars( vWorldNormal, lightDir, eyeDir);
 
-    vec3 albedo = toLinear(texture2D(colorMap, vUV).rgb);
+    vec3 amb = toLinear(texture2D(colorMap, vUV).rgb) * 0.2;
 
-    // TODO: apply fog
-    //color = doWonderfullFog( color, pos );
+    float ao = texture2D(cookedAO, vUV).r;
 
-    //CUBEMAP
     vec3 reflection = reflect( vI, vWorldNormal );
-    vec3 envColor = toLinear(textureCube( envMap, vec3(reflection.x, reflection.yz ) ).rgb);
+    vec3 cout = integrateDirLight(bvars, amb, toLinear(textureBlured(envMap, vec3(reflection.x, reflection.yz ))));
+    cout += integrateEnvLight(bvars, vec3(0.8), amb) *  ao;
+    cout += amb * ao;
+    /*
+    // ambient occlusion is amount of occlusion.  So 1 is fully occluded
+    // and 0 is not occluded at all.  Makes math easier when mixing
+    // shadowing effects.
+    ;
 
-	 // lighting terms
-    float occ = texture2D(cookedAO, vUV).r;
-    float sha = shadow(bvars.NdL) * bvars.NdL;
-    float sun = bvars.NdL;
-    float sky = clamp(0.5 + 0.5 * vNormalW.y, 0.0, 1.0 );
-    float ind = clamp(bvars.NdL, 0.0, 1.0 );
+    vec3 cout   = integrateDirLight(g_ldir, vec3(g_lillum), surf);
+    cout       += integrateEnvLight(surf, vec3(g_lillum)) * (1. - 3.5 * ao);
+    cout       += amb * (1. - 3.5 * ao);*/
 
-     // reflection
-    vec3 refl =  envColor;
-    vec3 ibl_reflection = textureBlured(envMap, vec3(reflection.x, reflection.yz ));
-
-    refl = mix(ibl_reflection, refl, vReflectionFactor);
-
-    //compute lighting
-    /*vec3 lin  = sun * refl * pow(vec3(sha), vec3(1.0,1.2,1.5));
-         lin += sky * refl * occ;
-         lin += ind * vec3(0.40,0.28,0.20) * occ;*/
-
-    //vec3 outCook = specularTerm(bvars, envColor, ibl_reflection);
-    vec3 outCook =  cookTorr(bvars);
-
-    /*vec3 cout  = outCook * sha;
-            cout += ibl_reflection * occ;
-            cout += albedo * occ * sha;*/
-
-    vec3 cout  = sun * ibl_reflection * pow(vec3(sha), vec3(1.0,1.2,1.5));
-         cout += sky * refl * occ;
-         cout += ind * vec3(0.40,0.28,0.20) * occ;
-         cout += albedo * occ * sha;
-
-    vec3 metalout = outCook * sha;
-        metalout += refl * occ;
-
-    cout = mix(cout, metalout, metalness);
-    gl_FragColor = vec4(cout, 1.0);
+    gl_FragColor  = vec4(toGamma(cout),1.0);
 }

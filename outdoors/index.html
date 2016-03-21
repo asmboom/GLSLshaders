@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8"/>
-    <title>Test</title>
+    <title>Jesús Carrasco - Technical Artist / Tool Developer</title>
     <script src="lib/require.js" data-main="lib/scene"></script>
     <style>
         body {
@@ -16,6 +16,10 @@
             background-color: #000;
             margin: 0px;
             overflow: hidden;
+        }
+
+        body, html {
+            height: 100%;
         }
 
         #info {
@@ -50,243 +54,43 @@
         #stats #fps #fpsGraph {
             display: none
         }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #imageCaption {
+            position: absolute;
+            right: 2%;
+            top: 20%;
+            width: 15%;
+            text-align: left;
+            z-index: 1;
+        }
+
+        #imageCaption h3 {
+            color: #337ab7;
+            font-size: 2em;
+        }
+
+        #imageCaption h4 {
+            font-size: 1.5em;
+        }
     </style>
 </head>
-
 <body>
 <div id="loading">Loading...</div>
+<div id="canvasHolder">
+
+</div>
+<div id="imageCaption">
+    <h3>Outdoors</h3>
+    <h4>Year 2016</h4>
+    <p>This is a PBR GLSL shader that I wrote, approaching to outdoors lighting. It takes advantage of the dynamic sky
+        shader to be used for image based lighting.</p>
+    <p>Cook-Torrance model for specular and complete PBR terms of roughness and metalness.</p>
+</div>
 </body>
-
-<script type="x-shader/x-vertex" id="outlineVertexShader">
-
-////////////////////////////////////////////////
-/// Program: Comic Book Shader Shader
-/// Description: TODO
-/// Author: Jesús Carrasco
-/// Date: 4/10/2015
-////////////////////////////////////////////////
-
-#ifdef GS_ES
-    precision highp float;
-#endif
-
-// Uniforms
-uniform float offset;
-
-void main(){
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position + normal * offset, 1.0);
-}
-
-
-
-</script>
-
-<script type="x-shader/x-fragment" id="outlineFragmentShader">
-
-////////////////////////////////////////////////
-/// Program: Comic Book Shader
-/// Description: TODO
-/// Author: Jesús Carrasco
-/// Date: 04/10/2015
-////////////////////////////////////////////////
-///
-
-
-#ifdef GS_ES
-    precision highp float;
-#endif
-
-void main(){
-
-    vec3 _color = vec3(0.0, 0.0, 0.2);
-    gl_FragColor = vec4( _color, 1.0);
-    
-}
-
-
-
-
-
-</script>
-<script type="x-shader/x-vertex" id="colorVertexShader">
-
-////////////////////////////////////////////////
-/// Program: Comic Book Shader Shader
-/// Description: TODO
-/// Author: Jesús Carrasco
-/// Date: 4/10/2015
-////////////////////////////////////////////////
-
-#ifdef GS_ES
-    precision highp float;
-#endif
-
-// Uniforms
-
-
-// Varying
-varying vec3 vPosition;
-varying vec3 vNormal;
-varying vec2 vUV;
-
-varying vec3 vReflect;
-varying float refractionRatio;
-varying vec3 vViewPosition;
-
-uniform float offset;
-
-vec3 transformDirection( in vec3 normal, in mat4 matrix ) {
-	return normalize( ( matrix * vec4( normal, 0.0 ) ).xyz );
-}
-
-void main(){
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-
-    vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-
-    //For normal mapping
-    vec3 objectNormal = vec3( normal );
-    vec3 worldNormal = transformDirection(objectNormal, modelMatrix);
-    vec3 cameraToVertex = normalize( worldPosition.xyz - cameraPosition );
-    refractionRatio = 1.0;
-    vReflect = refract( cameraToVertex, worldNormal, refractionRatio );
-
-    vViewPosition = - mvPosition.xyz;
-
-    vUV = uv;
-    vPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-    vNormal = (modelMatrix * vec4(normal, 0.0)).xyz;
-}
-
-
-
-
-
-
-
-</script>
-
-<script type="x-shader/x-fragment" id="colorFragmentShader">
-
-////////////////////////////////////////////////
-/// Program: Comic Book Shader
-/// Description: TODO
-/// Author: Jesús Carrasco
-/// Date: 04/10/2015
-////////////////////////////////////////////////
-///
-
-#ifdef GS_ES
-    precision highp float;
-#endif
-
-// Varying
-varying vec3 vPosition;
-varying vec3 vNormal;
-varying vec2 vUV;
-
-varying vec3 vReflect;
-varying float refractionRatio;
-varying vec3 vViewPosition;
-
-// Uniforms
-uniform sampler2D normalMap;
-uniform sampler2D diffuseMap;
-uniform vec3 lightPos;
-
-// Per-Pixel Tangent Space Normal Mapping
-// http://hacksoflife.blogspot.ch/2009/11/per-pixel-tangent-space-normal-mapping.html
-
-vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
-
-    vec2 normalScale = vec2(1.0, 1.0);
-
-    vec3 q0 = dFdx( eye_pos.xyz );
-    vec3 q1 = dFdy( eye_pos.xyz );
-    vec2 st0 = dFdx( vUV.st );
-    vec2 st1 = dFdy( vUV.st );
-
-    vec3 S = normalize( q0 * st1.t - q1 * st0.t );
-    vec3 T = normalize( -q0 * st1.s + q1 * st0.s );
-    vec3 N = normalize( surf_norm );
-
-    vec3 mapN = texture2D( normalMap, vUV ).xyz * 2.0 - 1.0;
-    mapN.xy = normalScale * mapN.xy;
-    mat3 tsn = mat3( S, T, N );
-    return normalize( tsn * mapN );
-
-}
-
-void main(){
-
-    //Directions
-    vec3 vNormalW = normalize(vNormal);
-    vec3 lightDirection = normalize(vPosition - lightPos);
-    vec3 viewDirectionW = normalize(cameraPosition - vPosition);
-
-    //Normal map
-
-    //vNormalW = perturbNormal2Arb( vViewPosition, vNormalW );
-
-    //Lambertian
-    float ndl = max(0.0, dot(-lightDirection, vNormalW)) * 0.5 + 0.5;
-
-
-    vec3 rimLight = vec3(-2.14, 0.0, -0.0);
-    float rimNdl = max(0.0, dot(-rimLight, vNormalW));
-
-    vec3 mainShadow = vec3(-0.5, -5.0, -0.5);
-    float shadNdl = max(0.0, dot(-mainShadow, vNormalW));
-
-    vec3 lowLight = vec3(2.0, -5.0, -2.0);
-
-    vec3 reflectionDirection = reflect(-lowLight, vNormalW);
-    float specLevel = max(0.0, dot(reflectionDirection, viewDirectionW));
-    float shininess = 0.2;
-    specLevel = pow(specLevel, max(1., 8.)) * shininess;
-
-    vec3 finalSpec = vec3(0.0, 0.0, 0.5) * specLevel;
-
-    if(shadNdl < 0.2)
-        shadNdl = 0.0;
-    else
-        shadNdl = 1.0;
-
-    //Fresnel
-    float fresnelTerm = dot(viewDirectionW, vNormalW);
-    fresnelTerm = clamp(1.0 - fresnelTerm, 0., 1.);
-
-    float innerLine;
-    float innerLineThickness = 0.01;
-
-    if(rimNdl > 0.5 && rimNdl < 0.5 + innerLineThickness){
-        innerLine = 0.0;
-    }
-    else{
-        innerLine = 1.0;
-    }
-
-    vec3 outLight;
-    vec3 _color;
-
-    if(rimNdl > 0.5){
-        outLight = vec3(0.5, 0.5, 0.3);
-        _color = texture2D(diffuseMap, vUV).rgb + outLight;
-    }else{
-        _color = texture2D(diffuseMap, vUV).rgb * shadNdl + finalSpec;
-    }
-
-    //_color = vec3(0.8);
-    //gl_FragColor = vec4( _color * innerLine * (1.0 - fresnelTerm * 0.5) * ndl, 1.0);
-    //
-    gl_FragColor = vec4(_color * ndl * innerLine, 1.0);
-    
-
-}
-
-
-
-</script>
 </html>
