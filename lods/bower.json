@@ -1,0 +1,28 @@
+{
+    "name": "Lods",
+    "version": "1.0.0",
+    "dependencies": {
+        "jquery": null,
+        "backbone-amd": null,
+        "underscore-amd": null,
+        "requirejs": null
+    },
+    "homepage": "https://github.com/jesuCarrasco/GLSLshaders",
+    "authors": [
+        "Jesús Carrasco <jcarrasco@gipym.com>"
+    ],
+    "main": "app/index.html",
+    "moduleType": [
+        "amd",
+        "yui"
+    ],
+    "license": "MIT",
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "app/scripts/vendor",
+        "test",
+        "tests"
+    ]
+}

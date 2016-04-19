@@ -1,0 +1,1025 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"reflection",
+				"reflectionCube"
+			],
+			[
+				"Mseh",
+				"MeshBasicMaterial"
+			],
+			[
+				"dpe",
+				"deps"
+			],
+			[
+				"Wath",
+				"WatchSceneChanges"
+			],
+			[
+				"Watch",
+				"WatchSceneChanges"
+			],
+			[
+				"thread",
+				"threaded_function"
+			],
+			[
+				"b",
+				"bvars"
+			],
+			[
+				"metla",
+				"metalMap"
+			],
+			[
+				"cal",
+				"calcFresnelColor"
+			],
+			[
+				"fres",
+				"fresnelTerm"
+			],
+			[
+				"rough",
+				"roughnessValue"
+			],
+			[
+				"Dire",
+				"DirectionalLight"
+			],
+			[
+				"texu",
+				"texture2D"
+			],
+			[
+				"viewDire",
+				"viewDirectionW"
+			],
+			[
+				"diff",
+				"diffuse"
+			],
+			[
+				"denom",
+				"denominator"
+			],
+			[
+				"env",
+				"envMap"
+			],
+			[
+				"Fre",
+				"FresnelSchlickEnvironmentGGX"
+			],
+			[
+				"light",
+				"lightDir"
+			],
+			[
+				"vNro",
+				"vNormal"
+			],
+			[
+				"cma",
+				"cameraPosition	(cookToor.frag)"
+			],
+			[
+				"mrt",
+				"mrtTarget"
+			],
+			[
+				"phong",
+				"phongV"
+			],
+			[
+				"Rough",
+				"Roughness	(cookToor.frag)"
+			],
+			[
+				"F",
+				"F_Schlick"
+			],
+			[
+				"Spe",
+				"SpecularLighting"
+			],
+			[
+				"half",
+				"halfVector"
+			],
+			[
+				"fer",
+				"fresnelTerm"
+			],
+			[
+				"fre",
+				"fresnelTerm"
+			],
+			[
+				"cook",
+				"cookTorr"
+			],
+			[
+				"specu",
+				"specularColor"
+			],
+			[
+				"monkey",
+				"monkeyMaterial"
+			],
+			[
+				"roug",
+				"roughnessValue"
+			],
+			[
+				"uni",
+				"uniformStruct"
+			],
+			[
+				"ligh",
+				"lightPos"
+			],
+			[
+				"eye",
+				"eye_pos"
+			],
+			[
+				"vNorma",
+				"vNormalW"
+			],
+			[
+				"cubet",
+				"cubeTarget"
+			],
+			[
+				"cubeT",
+				"cubeTest"
+			],
+			[
+				"cubeTe",
+				"cubeTestGEO"
+			],
+			[
+				"te",
+				"textureCube	(threePhong.frag)"
+			],
+			[
+				"sy",
+				"skyScene"
+			],
+			[
+				"pl",
+				"planeMaterial"
+			],
+			[
+				"ambient",
+				"ambientLighting"
+			],
+			[
+				"vNorm",
+				"vNormalW"
+			],
+			[
+				"out",
+				"outCook"
+			],
+			[
+				"Fresnel",
+				"FresnelIOR"
+			],
+			[
+				"gl_",
+				"gl_FragColor"
+			],
+			[
+				"star",
+				"starring"
+			],
+			[
+				"clie",
+				"clientX"
+			],
+			[
+				"SCREEN",
+				"SCREEN_HEIGHT"
+			],
+			[
+				"SCREE",
+				"SCREEN_HEIGHT"
+			],
+			[
+				"SCRE",
+				"SCREEN_WIDTH"
+			],
+			[
+				"vNr",
+				"vNormalW"
+			],
+			[
+				"texture",
+				"texture2D"
+			],
+			[
+				"ambe",
+				"ambientLighting"
+			],
+			[
+				"SC",
+				"SCREEN_HEIGHT"
+			],
+			[
+				"SCR",
+				"SCREEN_WIDTH"
+			],
+			[
+				"textu",
+				"textureLoader"
+			],
+			[
+				"instance",
+				"instanceof"
+			],
+			[
+				"View",
+				"Viewport"
+			],
+			[
+				"hover",
+				"hovereffect	(index.html)"
+			],
+			[
+				"cmae",
+				"cameraNear"
+			],
+			[
+				"Web",
+				"THREE.WebGLRenderTarget"
+			],
+			[
+				"depthMa",
+				"depthMaterial"
+			],
+			[
+				"SSA",
+				"SSAOShader"
+			],
+			[
+				"particl",
+				"particleGEO"
+			],
+			[
+				"vNor",
+				"vNormalW"
+			],
+			[
+				"rogh",
+				"roughnessTex"
+			],
+			[
+				"roughn",
+				"roughness"
+			],
+			[
+				"back",
+				"background-attachment"
+			],
+			[
+				"postii",
+				"positionnF"
+			],
+			[
+				"postpro",
+				"postproPlaneGEO"
+			],
+			[
+				"Colo",
+				"ColorF"
+			],
+			[
+				"shdo",
+				"shadowCoeff"
+			],
+			[
+				"vV",
+				"vViewPosition	(phong.frag)"
+			],
+			[
+				"spo",
+				"spotLight"
+			],
+			[
+				"shadowTe",
+				"shadowTextureSize"
+			],
+			[
+				"shadow",
+				"THREE.BasicShadowMap"
+			],
+			[
+				"updateMatri",
+				"updateMatrixWorld	(three.js)"
+			],
+			[
+				"ruib",
+				"rubiaMesh"
+			],
+			[
+				"PCF",
+				"PCFShadowMap	(three.js)"
+			],
+			[
+				"sahdow",
+				"shadowColor"
+			],
+			[
+				"wath",
+				"watchPlane"
+			],
+			[
+				"watc",
+				"watchPlane"
+			],
+			[
+				"wat",
+				"watchPlane"
+			],
+			[
+				"0x",
+				"0xFFFFFF"
+			],
+			[
+				"spe",
+				"specTexture"
+			],
+			[
+				"_position",
+				"_positionCompo"
+			],
+			[
+				"SHADER_OR",
+				"SHADER_PROGRAM_COMPOSITING"
+			],
+			[
+				"unif",
+				"uniform1i"
+			],
+			[
+				"SHADER_PR",
+				"SHADER_PROGRAM_COMPOSITING"
+			],
+			[
+				"SHADER_PO",
+				"SHADER_PROGRAM_COMPOSITING"
+			],
+			[
+				"SHADER_O",
+				"SHADER_PROGRAM_COMPOSITING"
+			],
+			[
+				"shader_ver",
+				"shader_vertex_compositing"
+			],
+			[
+				"SHADER_",
+				"SHADER_PROGRAM_COMPOSITING"
+			],
+			[
+				"compo",
+				"compositingF"
+			],
+			[
+				"DEPTH_",
+				"DEPTH_BUFFER_BIT"
+			],
+			[
+				"EXT_",
+				"EXT_MRT"
+			],
+			[
+				"TEXU",
+				"TEXTURE_2D"
+			],
+			[
+				"addE",
+				"addEvents"
+			],
+			[
+				"Confen",
+				"Conference2D	(conferenceService.js)"
+			],
+			[
+				"z",
+				"z-index"
+			],
+			[
+				"cineam",
+				"cinemaScene	(cinemascene.js)"
+			],
+			[
+				"Confe",
+				"Conference2D"
+			],
+			[
+				"confere",
+				"conference2D"
+			],
+			[
+				"Float",
+				"FloatType	(three.js)"
+			],
+			[
+				"projec",
+				"projectionMatrix	(scene.js)"
+			],
+			[
+				"matrix",
+				"matrixWorld	(three.js)"
+			],
+			[
+				"project",
+				"projectionMatrix"
+			],
+			[
+				"overr",
+				"overrideMaterial"
+			],
+			[
+				"ph",
+				"phongMaterial"
+			],
+			[
+				"model",
+				"modelViewMatrix	(phong.vert)"
+			],
+			[
+				"Object",
+				"THREE.Object3D"
+			],
+			[
+				"mult",
+				"multiplyMatrices"
+			],
+			[
+				"Direction",
+				"THREE.DirectionalLight"
+			],
+			[
+				"boot",
+				"bootstrapTpl"
+			],
+			[
+				"fullcalen",
+				"fullcalendarEs"
+			],
+			[
+				"boo",
+				"bootstrapTpl"
+			],
+			[
+				"full",
+				"fullcalendarEs"
+			],
+			[
+				"Matrix",
+				"THREE.Matrix4"
+			],
+			[
+				"un",
+				"uniformDepth"
+			],
+			[
+				"sub",
+				"submitButton"
+			],
+			[
+				"UNSIGN",
+				"UNSIGNED_SHORT"
+			],
+			[
+				"we",
+				"webglTexture"
+			],
+			[
+				"unifor",
+				"uniformMatrix4fv"
+			],
+			[
+				"DEPTH",
+				"DEPTH_BUFFER_BIT"
+			],
+			[
+				"RENDER",
+				"RENDERBUFFER"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 372.0,
+		"last_filter": "Package Control: ",
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 530.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/var/www/html/renderTests/GLSLshaders/lods/bower.json",
+		"/home/jcarrasco/Apps/three.js/examples/js/postprocessing/EffectComposer.js",
+		"/var/www/html/renderTests/GLSLshaders/pbr/lib/scene.js",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/lib/three/Mirror.js",
+		"/var/www/html/renderTests/GLSLshaders/outdoors/data/shaders/cookToor.frag",
+		"/var/www/html/renderTests/GLSLshaders/outdoors/lib/scene.js",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/lib/bower.json",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/lib/Using require.js with your three.js application",
+		"/var/www/html/renderTests/web-starter-kit-0.6.1/app/scripts/main.js",
+		"/var/www/html/renderTests/GLSLshaders/lods/index.html",
+		"/var/www/html/renderTests/web-starter-kit-0.6.1/app/styles/main.css",
+		"/home/jcarrasco/Apps/blend4web_sdk_free/apps_dev/Lobby/index.html",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/3dmodels/games/chess/chess.json",
+		"/var/www/html/renderTests/GLSLshaders/deferred/lib/scene.bak.js",
+		"/home/jcarrasco/Apps/three.js/examples/js/shaders/CopyShader.js",
+		"/home/jcarrasco/Apps/three.js/examples/js/shaders/CompositeShader.js",
+		"/var/www/html/renderTests/GLSLshaders/deferred/data/shaders/postpro.vert",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/shaders/fadeLambert.frag",
+		"/home/jcarrasco/Apps/three.js/examples/js/Mirror.js",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/conferenceRoom/conferenceRoom.js",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/testProject/testProject.html",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/conferenceRoom/conferenceRoom.html",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/petigors_tale/petigors_tale.html",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/testProject/testProject.js",
+		"/home/jcarrasco/Apps/Blend4Web/shaders/main.glslf",
+		"/home/jcarrasco/Apps/Blend4Web/shaders/main.glslv",
+		"/var/www/html/renderTests/GLSLshaders/deferred/lib/scene.js",
+		"/home/jcarrasco/.config/blender/2.76/scripts/addons/blender-sculpt-tools-master/__init__.py",
+		"/home/jcarrasco/Projects/blendThree/addon/__init__.py",
+		"/home/jcarrasco/.config/blender/2.76/scripts/addons/io_three/__init__.py",
+		"/home/jcarrasco/Descargas/unity-editor-5.3.3f1/Editor/Data/CGIncludes/UnityCG.glslinc",
+		"/var/www/html/renderTests/GLSLshaders/glFlag/data/shaders/flag.vert",
+		"/var/www/html/renderTests/GLSLshaders/glFlag/data/shaders/flag.frag",
+		"/home/jcarrasco/Apps/blender-2.77-linux-glibc211-x86_64/2.77/scripts/templates_py/addon_add_object.py",
+		"/home/jcarrasco/.config/blender/2.77/scripts/addons/blender-sculpt-tools-master/__init__.py",
+		"/home/jcarrasco/.config/blender/2.76/scripts/addons/blend4web/__init__.py",
+		"/home/jcarrasco/Projects/systems/watchCivie.py",
+		"/home/jcarrasco/Apps/three.js-r75/utils/exporters/blender/addons/io_three/__init__.py",
+		"/home/jcarrasco/.config/blender/2.77/scripts/addons/watchCivie.py",
+		"/home/jcarrasco/Apps/blender-2.77-linux-glibc211-x86_64/2.77/scripts/templates_py/batch_export.py",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/data/cityDataTest.json",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/data/hotspotData.json",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/scenes/citySceneDyn.bak.js",
+		"/home/jcarrasco/Projects/civie/src/main/resources/nosql/mongodb.json",
+		"/home/jcarrasco/Apps/GeeXLab_FREE_linux64/README.txt",
+		"/var/www/html/renderTests/GLSLshaders/glFlag/task4.js",
+		"/var/www/html/renderTests/GLSLshaders/threePhong.vert",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/data/cityDataTest.posOk.json",
+		"/home/jcarrasco/.config/blender/2.77/scripts/addons/blend4web/__init__.py",
+		"/home/jcarrasco/Descargas/philoGL/README.md",
+		"/home/jcarrasco/Descargas/philoGL/build/PhiloGL.js",
+		"/home/jcarrasco/Apps/glTF/README.md",
+		"/home/jcarrasco/Apps/glTF/COLLADA2GLTF/CMakeFiles/CMakeOutput.log",
+		"/home/jcarrasco/Apps/Urho3D/README.md",
+		"/home/jcarrasco/Apps/GeeXLab_FREE_linux64/demo.sh",
+		"/home/jcarrasco/Apps/GeeXLab_FREE_linux64/demos/AntTweakBar/demo_gl2.xml",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/scenes/citySceneDyn.js",
+		"/var/www/html/renderTests/GLSLshaders/vr/lib/scene.js",
+		"/var/www/html/renderTests/GLSLshaders/pbr/lib/FirstPersonControls.js",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/scenes/citySceneDyn.js",
+		"/var/www/html/renderTests/GLSLshaders/outdoors/data/shaders/phong.vert",
+		"/var/www/html/renderTests/GLSLshaders/glFlag/text.js",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/data/materialList.js",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/3dmodels/station/b4w/station.json",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/data/cityDataTest.json",
+		"/home/jcarrasco/Assets/scripts/watchCivie.py",
+		"/var/www/html/renderTests/GLSLshaders/glFlag/index.html",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/shaders/phong.frag",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/shaders/fadePhong.frag",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/shaders/fadePhong.vert",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/shaders/common.vert",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/shaders/lambert.frag",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/shaders/lambert.frag",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/shaders/fadePhong.vert",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/shaders/phong.vert",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/shaders/fadeLambert.vert",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/shaders/phong.vert",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/shaders/fadeLambert.frag",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/animationTest/animationTest.js",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/petigors_tale/js/character.js",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/petigors_tale/js/game_main.js",
+		"/var/www/html/renderTests/GLSLshaders/deferred/data/shaders/mrt.frag",
+		"/var/www/html/renderTests/GLSLshaders/vr/lib/WebVR.js",
+		"/var/www/html/renderTests/GLSLshaders/threePBR.frag",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/WEB-INF/intro.jsp",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/scenes/station.js",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/station/station.css",
+		"/home/jcarrasco/Apps/Blend4Web/apps_dev/station/station.html",
+		"/home/jcarrasco/Apps/blender-2.76b-linux-glibc211-x86_64/2.76/scripts/templates_py/addon_add_object.py",
+		"/home/jcarrasco/Apps/blender-2.76b-linux-glibc211-x86_64/2.76/scripts/templates_py/ui_panel.py",
+		"/home/jcarrasco/Apps/blender-2.76b-linux-glibc211-x86_64/2.76/scripts/templates_py/ui_menu.py",
+		"/home/jcarrasco/Apps/blender-2.76b-linux-glibc211-x86_64/2.76/scripts/templates_py/ui_panel_simple.py",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/data/cityDataTest.bak.json",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/data/cityDataTest.bak2.json",
+		"/home/jcarrasco/Apps/three.js/examples/js/BlendCharacterGui.js",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/main/client.js",
+		"/home/jcarrasco/Apps/three.js/examples/webgl_animation_skinning_blending.html",
+		"/home/jcarrasco/Documentos/blendergltf.py",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/3dmodels/station/avatar_male.dae",
+		"/home/jcarrasco/netbeans-8.1/etc/netbeans.conf",
+		"/home/jcarrasco/Apps/three.js/examples/js/BlendCharacter.js",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/data/vehiclePaths.json",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/data/materialList.bak.js",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/data/materialList.js",
+		"/home/jcarrasco/exportPositionsLods.py",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/main/client.js",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/model/MaterialFactory.js",
+		"/home/jcarrasco/exportVertices.py",
+		"/home/jcarrasco/addProperty.py",
+		"/home/jcarrasco/Apps/blender-2.76b-linux-glibc211-x86_64/2.76/scripts/templates_py/script_stub.py",
+		"/home/jcarrasco/pointsList.json",
+		"/home/jcarrasco/exportPositions.py",
+		"/home/jcarrasco/exportJoin.py",
+		"/home/jcarrasco/exporterJSON.py",
+		"/home/jcarrasco/streetDefinition.py",
+		"/home/jcarrasco/Apps/blender-2.76b-linux-glibc211-x86_64/2.76/scripts/templates_py/background_job.py",
+		"/var/www/html/renderTests/GLSLshaders/threePhong.frag",
+		"/var/www/html/renderTests/b4w/index.html",
+		"/var/www/html/renderTests/GLSLshaders/InknPaint/lib/scene.js",
+		"/home/jcarrasco/Apps/Babylon.js/materialsLibrary/materials/fire/babylon.fireMaterial.ts",
+		"/home/jcarrasco/netbeans-8.0.2/etc/netbeans.conf",
+		"/home/jcarrasco/Projects/civie/target/civie/WEB-INF/intro.jsp",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/data/cityDataTest.bak2.json",
+		"/home/jcarrasco/Projects/civie.city/src/main/webapp/resources/js/scenes/servicepointcopredijescene.js",
+		"/home/jcarrasco/Projects/civie/target/civie/resources/js/scenes/intro.js",
+		"/var/tmp/kdecache-jcarrasco/krun/10283_0_loader.js",
+		"/home/jcarrasco/Projects/civie/src/main/webapp/resources/js/model/loader.js",
+		"/home/jcarrasco/Projects/civie/.git/config"
+	],
+	"find":
+	{
+		"height": 34.0
+	},
+	"find_in_files":
+	{
+		"height": 90.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"clear",
+			"mixer",
+			"gl_Position",
+			"export",
+			"ExportThree",
+			"export.three",
+			"class three",
+			"name",
+			"main",
+			"speed",
+			"vNormal",
+			"[64.",
+			"inService",
+			"[65.",
+			"InServicePoint",
+			"door",
+			"hotspot",
+			"bus",
+			"bounding",
+			"onkeyUp",
+			"ray",
+			"mouse",
+			"clock",
+			"controls",
+			"noiseTex",
+			"noiseWB",
+			"materials",
+			"textures",
+			"train.jpg",
+			"InServicePoint_sqr_",
+			"InServicePoint_sqr_03",
+			"InServicePoint",
+			"InServicePoint_combo_signs_sqr",
+			"corner",
+			"InServicePoint",
+			"inservicePoint_combo",
+			"inServicePoint_combo",
+			"inServicePoint",
+			"combo_sign",
+			"cristal",
+			"servicepoint",
+			"gra",
+			"combo",
+			"building",
+			"cristal",
+			"cristalDoor",
+			"cristal",
+			"servicepoint",
+			"InservicePoint",
+			"combo",
+			"InservicePoint",
+			"vShade",
+			"speed",
+			"matDiff",
+			"normal",
+			"texColor",
+			"alpha",
+			"streetlight",
+			"getObjectByName",
+			"controls",
+			"animation",
+			"root",
+			"specularTerm",
+			"outCook",
+			"self",
+			"kerb",
+			"terrac",
+			"busMercedesBenz",
+			"bus",
+			"InServicePoint_combo",
+			"InservicePoint",
+			"InServicePoint",
+			"inservicePoint",
+			"combo_signs",
+			"add",
+			"Array",
+			";\n",
+			"combo_sign",
+			"dome",
+			"dome_cri",
+			"combo_sign",
+			"combo",
+			"combo_sign",
+			"dome",
+			"cristal",
+			"git rm ",
+			"git rm ./",
+			"./",
+			"diagonal",
+			" \"lods\": [\n            [0, 200]\n        ],",
+			"pavement",
+			"diagona",
+			"diagonal",
+			"roughness",
+			":8443/civie/resources/js/model/PoolManager.js:43",
+			"lezo",
+			"lods",
+			"[\n            [0, 200],\n            [50, 350],\n            [100, 600]\n        ]",
+			"hostspot",
+			"main_ave_track_lines",
+			"lines",
+			"InServ",
+			"inserv",
+			"inservicepoint",
+			"streetLight",
+			"pavement",
+			"material",
+			"scene",
+			"mixer",
+			"vReflectionFactor",
+			"costd",
+			"costl",
+			"costd",
+			"FRESNEL_HORNER_APPROXIMATION",
+			"metalness",
+			"specular",
+			"costd",
+			"roughness",
+			"fresnel",
+			".point",
+			"surfaceData",
+			"BRDFVars",
+			"calcBRDFVars",
+			"INITSURF",
+			"INITSUFRT",
+			"material",
+			"DISTMARCH_MAXDIST",
+			"distmarch"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"textureCloud",
+			"rm ",
+			"git rm ",
+			"git rm ./",
+			" \"lods\": [\n            [0, 400]\n        ],",
+			"",
+			"[\n            [0, 100],\n            [100, 350],\n            [350, 600]\n        ]",
+			"SCREEN_HEIGHT",
+			"SCREEN_WIDTH",
+			"Math",
+			"monkeyMaterial",
+			"depthMap",
+			"vUV",
+			"",
+			"vUV",
+			"",
+			"400x500",
+			"colorTarget",
+			"shadowTextureSize",
+			"shadowDarkness",
+			"vShadowCoord",
+			"shadBias",
+			"shadowTexture",
+			"shadBias",
+			"shadowTextureSize",
+			"shadBias",
+			"context",
+			"outContainer",
+			"div",
+			"",
+			"FileApp",
+			"0.0",
+			"depthTest",
+			"strHorizontal",
+			"",
+			"submitButton button",
+			"cancelButton button",
+			"submitButton button",
+			"cancelButton button",
+			"submitButton button",
+			"[0, 185],\n            [50, 290],\n            [100, 1000]",
+			"[0, 185],\n            [50, 275],\n            [100, 1000]",
+			"[0, 185],\n            [50, 250],\n            [100, 1000]",
+			"lightColor",
+			"[0, 170], [50, 250], [130, 800]",
+			"[0, 180], [70, 250], [130, 800]",
+			"[0, 180], [70, 250], [130, 600]",
+			"[0, 170], [70, 250], [130, 600]",
+			"[0, 150], [70, 250], [130, 600]",
+			"[0, 120], [70, 250], [130, 600]",
+			"[0, 90], [70, 250], [130, 600]",
+			"[0, 180], [70, 250], [130, 600]",
+			"[0, 180], [90, 250], [130, 600]",
+			"[0, 180], [100, 250], [130, 600]",
+			"[0, 180], [110, 250], [130, 600]",
+			"[0, 180], [120, 250], [130, 600]",
+			"[0, 180], [120, 200], [130, 600]",
+			"[0, 180], [80, 200], [130, 600]",
+			"[0, 180], [30, 200], [130, 600]",
+			"[0, 150], [30, 200], [130, 600]",
+			"[0, 100], [30, 180], [130, 600]",
+			"[0, 60], [30, 180], [130, 600]",
+			"[0, 50], [40, 150], [140, 600]",
+			"[0, 0], [20, 50], [50, 200]",
+			"[0, 50], [50, 150], [150, 800]",
+			"tile10VS",
+			"tile10FS",
+			"jpg",
+			"opacity",
+			" 0.0, -0.0, 0, 50, 150]",
+			" -0.0, 0, 0, 50]",
+			"0, 300]",
+			"0.0, 0.0, 0.0, 0, 400",
+			"0.0, 0.0, 0.0, 0, 1000",
+			" 0.0, 0.0, 300, 1000",
+			"0.0, 0.0, 0.0, 150, 600",
+			"0.0, -0.0, 1.5707963705062866, 0, 25",
+			"0.0, 0.0, 0.0, 200, 600",
+			"0.0, 0.0, 0.0, 300, 400",
+			"-0.0, 1.5707963705062866, 25, 60",
+			"bolardo",
+			"',",
+			"'"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 23.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 96.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "lods.sublime-project",
+	"replace":
+	{
+		"height": 62.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 184.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
