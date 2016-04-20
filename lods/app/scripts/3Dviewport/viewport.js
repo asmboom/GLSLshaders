@@ -1,13 +1,15 @@
 define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", "orbit",
-        "3Dviewport/models/MaterialFactory", "pubsub", "session"
+        "3Dviewport/models/MaterialFactory", "pubsub", "session", "3Dviewport/inputs/inputs"
     ],
-    function(threejs, Loader, PoolManager, Orbit, MaterialFactory, PubSub, Session) {
+    function(threejs, Loader, PoolManager, Orbit, MaterialFactory, PubSub, Session, Inputs) {
         var Viewport = function() {
             var camera, renderer, scene;
 
             var pool = {};
 
             var controls;
+
+            var inputs;
 
             var sceneData = {},
                 subset = {};
@@ -23,6 +25,8 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
 
                 if (!options)
                     options = {};
+
+
 
                 // RENDERER
                 renderer = new THREE.WebGLRenderer({
@@ -46,6 +50,9 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
                 Session.currentScene = scene = new THREE.Scene();
                 camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
                 camera.position.set(0, -2, -30);
+
+                inputs = new Inputs(camera);
+                inputs.initialize();
 
                 setLighting();
                 if (options.shadows)
@@ -78,12 +85,12 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
                 hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xffffff, 0.4);
                 hemiLight.color.setHSL(0.6, 1, 0.6);
                 hemiLight.groundColor.setHSL(0.095, 1, 0.75);
-                hemiLight.position.set(350, -400, 600);
+                hemiLight.position.set(350, 600, 400);
                 scene.add(hemiLight);
 
                 //Sun
                 light = new THREE.DirectionalLight(0xfff6b6, 1.0);
-                light.position.set(350, -400, 600);
+                light.position.set(350, 600, 400);
                 light.target.position.copy(camera.position);
                 scene.add(light);
 
@@ -137,38 +144,38 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
             };
 
             var setShadows = function() {
-                /*light.castShadow = true;
+                light.castShadow = true;
                 light.shadow.mapSize.height = light.shadow.mapSize.width = 4096;
 
-                var d = 250;
+                var d = 800;
 
                 light.shadow.camera.left = -d;
                 light.shadow.camera.right = d;
                 light.shadow.camera.top = d;
                 light.shadow.camera.bottom = -d;
 
-                light.shadow.camera.near = 450;
-                light.shadow.camera.far = 1000;
+                light.shadow.camera.near = 350;
+                light.shadow.camera.far = 5000;
                 //light.shadow.bias = -0.00001;
                 light.shadow.camera.visible = true;
 
                 renderer.shadowMap.enabled = true;
-                //renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-                light.position.x = me.lastPosition.x + 350;
-                light.position.y = me.lastPosition.y - 400;
-                light.position.z = me.lastPosition.z + 600;
-
-                 var dBlur = 200;
-                 //var second shadow
-                 var lightShadow = light.clone();
-                 lightShadow.intensity = 1.0;
-                 lightShadow.shadow.camera.left = -dBlur;
-                 lightShadow.shadow.camera.right = dBlur;
-                 lightShadow.shadow.camera.top = dBlur;
-                 lightShadow.shadow.camera.bottom = -dBlur;
-                 lightShadow.shadow.camera.visible = true;
-                 console.log(lightShadow);*/
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                /*
+                                light.position.x = me.lastPosition.x + 350;
+                                light.position.y = me.lastPosition.y - 400;
+                                light.position.z = me.lastPosition.z + 600;
+                                
+                                 var dBlur = 200;
+                                 //var second shadow
+                                 var lightShadow = light.clone();
+                                 lightShadow.intensity = 1.0;
+                                 lightShadow.shadow.camera.left = -dBlur;
+                                 lightShadow.shadow.camera.right = dBlur;
+                                 lightShadow.shadow.camera.top = dBlur;
+                                 lightShadow.shadow.camera.bottom = -dBlur;
+                                 lightShadow.shadow.camera.visible = true;
+                                 console.log(lightShadow);*/
 
                 //scene.add(lightShadow);
             };
@@ -184,12 +191,9 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
                         building1: {
                             "maxInstances": 4,
                             "lods": [
-                                /*[0, 200],
+                                [0, 200],
                                 [50, 350],
-                                [100, 600]*/
-                                [0, 100],
-                                [100, 350],
-                                [350, 1000]
+                                [100, 2000]
                             ],
                             positions: [
                                 [0, 0, 0.0, 0.0],
@@ -199,9 +203,9 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
                         building2: {
                             "maxInstances": 4,
                             "lods": [
-                                [0, 100],
-                                [100, 350],
-                                [350, 1000]
+                                [0, 200],
+                                [50, 350],
+                                [100, 2000]
                             ],
                             positions: [
                                 [0, 0, 600, 0.0],
@@ -211,9 +215,9 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
                         building3: {
                             "maxInstances": 4,
                             "lods": [
-                                [0, 100],
-                                [100, 350],
-                                [350, 1000]
+                                [0, 200],
+                                [50, 350],
+                                [100, 2000]
                             ],
                             positions: [
                                 [0, 0, 1200, 0.0],
@@ -223,9 +227,9 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
                         building4: {
                             "maxInstances": 4,
                             "lods": [
-                                [0, 100],
-                                [100, 350],
-                                [350, 1000]
+                                [0, 200],
+                                [50, 350],
+                                [100, 2000]
                             ],
                             positions: [
                                 [0, 0, 1800, 0.0],
@@ -266,9 +270,6 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
             function updateLODs(lodContainer, distance, lods) {
 
                 for (var i = 0; i < lodContainer.children.length; i++) {
-                    /*if (lodContainer.children[i].name.indexOf("combo") !== -1)
-                     console.log(lodContainer.children[i].name, lods[i][0], lods[i][1]);*/
-
                     if (distance >= lods[i][0] && distance <= lods[i][1]) {
 
                         lodContainer.children[i].visible = true;
@@ -286,6 +287,7 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
              */
             function animate() {
 
+                inputs.update();
                 window.requestAnimationFrame(animate);
                 renderer.render(scene, camera);
                 controls.update();
@@ -301,7 +303,7 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
 
                     for (var instance in sceneData[obj].positions) {
 
-                        var distance = math.abs(camera.position.clone().distanceTo(new THREE.Vector3(sceneData[obj].positions[instance][0], sceneData[obj].positions[instance][1], 0.0)));
+                        var distance = math.abs(camera.position.clone().distanceTo(new THREE.Vector3(sceneData[obj].positions[instance][0], 0.0, sceneData[obj].positions[instance][2])));
                         if (distance < sceneData[obj].lods[sceneData[obj].lods.length - 1][1]) {
                             if (subset[obj][instance]) {
                                 updateLODs(subset[obj][instance][4], distance, sceneData[obj].lods);
@@ -324,7 +326,6 @@ define(["threejs", "3Dviewport/models/loader", "3Dviewport/models/PoolManager", 
 
                             delete subset[obj][instance];
                         }
-
                     }
                 }
             };

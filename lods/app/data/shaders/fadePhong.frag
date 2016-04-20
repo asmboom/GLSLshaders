@@ -24,13 +24,13 @@ void main(){
     vec3 ambientLighting = sceneAmbient * vec3(matDiff);
 
     //fogFactor will act as measure distance for lods
-    /*if(fogFactor < near){
+    if(fogFactor < near){
         discard;
     }
 
     if(fogFactor > far){
         discard;
-    }*/
+    }
 
     vec3 lightPos = vec3(350.0, -400.0, 600.0);
     vec3 lightColor = vec3(1.0, 0.964, 0.714);

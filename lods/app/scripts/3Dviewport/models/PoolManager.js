@@ -23,7 +23,6 @@ define(["session"], function(Session) {
                     if (objects[i][0].children.length === 0) {
                         if (Session.materialLib[objects[i][0].material.name]) {
                             objects[i][0].material = Session.materialLib[objects[i][0].material.name][i];
-                            //TODO: Arreglar el near para los shaders
                             if (i == 0)
                                 objects[i][0].near = 0;
                             else
@@ -79,40 +78,12 @@ define(["session"], function(Session) {
                 currentObject.position.y = transformationMatrix[1];
                 currentObject.position.z = transformationMatrix[2];
 
-                currentObject.rotation.z = -transformationMatrix[3];
-
-                //Random rotation in trees
-                if (currentObject.name === "Tree") {
-                    currentObject.rotation.z += Math.round(Math.random() * 4) * Math.PI;
-                }
-
-                currentObject.rotation.y = Math.PI;
-                currentObject.rotation.x = 0;
+                currentObject.rotation.y = transformationMatrix[3];
 
                 currentObject.poolId = maxSize - 1;
                 currentObject.visible = true;
                 currentObject.freed = false;
                 currentObject.updateMatrixWorld();
-
-                if (currentObject.name.indexOf("bounding_box") !== -1) {
-                    currentObject.visible = false;
-                }
-
-                if (currentObject.name.indexOf("_signs") !== -1) {
-                    var texLoader = new THREE.TextureLoader();
-
-                    texLoader.load(context + "/resources/3dmodels/servicePointsTex/" + transformationMatrix[6] + ".jpg", function(tex) {
-                        currentObject.children[0].material = new THREE.MeshBasicMaterial({
-                            map: tex
-                        });
-                    }, function(data) {
-
-                    });
-                }
-
-                if (currentObject.name.indexOf("InServicePoint") !== -1) {
-                    currentObject.servicePointId = transformationMatrix[7];
-                }
 
                 this.pool.unshift(this.pool.pop());
             } else

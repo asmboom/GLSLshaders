@@ -23,29 +23,25 @@ define(["threejs", "session", "../../../data/materialList", //
 
                     var struct = Session.materialList[i - 1];
                     var texs = [];
-                    switch (struct.type) {
-                        case "Phong":
 
-                            var textureLoader = new THREE.TextureLoader();
-                            textureLoader.load(struct.d, function(tex) {
-                                //Diffuse
-                                texs[0] = tex;
-                                var textureLoader = new THREE.TextureLoader();
-                                textureLoader.load(struct.s, function(tex) {
-                                    //Specular
-                                    texs[1] = tex;
-                                    assignShader(struct, texs);
-                                    getMaterials();
-                                }, function() {
-                                    console.log("Error specular");
-                                });
 
-                            }, function() {
-                                console.log("Error diffuse");
-                            });
+                    var textureLoader = new THREE.TextureLoader();
+                    textureLoader.load(struct.d, function(tex) {
+                        //Diffuse
+                        texs[0] = tex;
+                        var textureLoader = new THREE.TextureLoader();
+                        textureLoader.load(struct.s, function(tex) {
+                            //Specular
+                            texs[1] = tex;
+                            assignShader(struct, texs);
+                            getMaterials();
+                        }, function() {
+                            console.log("Error specular");
+                        });
 
-                            break;
-                    }
+                    }, function() {
+                        console.log("Error diffuse");
+                    });
 
                     i--;
                 }

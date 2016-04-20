@@ -1,6 +1,5 @@
 define([], function() {
-    var materialList = function(sceneId) {
-
+    var materialList = function() {
         var materialData = [{
             name: "building1",
             d: "data/textures/null.jpg",
